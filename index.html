@@ -240,7 +240,74 @@ button:disabled{
 </head>
 
 <body>
+<div id="loginScreen" style="
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#111827;
+    padding:20px;
+">
 
+    <div style="
+        width:100%;
+        max-width:380px;
+        background:#1f2937;
+        padding:30px;
+        border-radius:12px;
+        border:1px solid #374151;
+        text-align:center;
+    ">
+
+        <h1 style="margin-bottom:8px;">
+            🎱 מערכת ניהול
+        </h1>
+
+        <p style="
+            color:#9ca3af;
+            margin-bottom:25px;
+        ">
+            כניסת בעל העסק
+        </p>
+
+        <input
+            id="adminPassword"
+            type="password"
+            placeholder="סיסמה"
+            style="
+                width:100%;
+                margin-bottom:12px;
+            "
+        >
+
+        <button
+            id="loginBtn"
+            style="
+                width:100%;
+                padding:13px;
+                background:#16a34a;
+                color:white;
+                font-weight:bold;
+            "
+        >
+            כניסה
+        </button>
+
+        <div
+            id="loginError"
+            style="
+                display:none;
+                color:#f87171;
+                margin-top:15px;
+            "
+        >
+            הסיסמה שגויה
+        </div>
+
+    </div>
+
+</div>
+ <div id="app" style="display:none;">
 <header>
     <h1>🎱הנהלת חשבונות🎱</h1>
     <p>מערכת ניהול לקוחות</p>
@@ -266,7 +333,8 @@ button:disabled{
     <div id="customersList"></div>
 
 </div>
-    
+
+ </div> <!-- סוגר את app -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
@@ -283,9 +351,73 @@ const db = window.supabase.createClient(
 
 console.log("Supabase connected");
 
+const loginScreen = document.getElementById("loginScreen");
+const app = document.getElementById("app");
+const adminPassword = document.getElementById("adminPassword");
+const loginBtn = document.getElementById("loginBtn");
+const loginError = document.getElementById("loginError");
 
-    
+// האימייל של חשבון בעל העסק ב-Supabase
+const ADMIN_EMAIL = "ghadiabo@gmail.com";
+
+async function login() {
+    const password = adminPassword.value;
+
+    if (!password) {
+        loginError.textContent = "נא להזין סיסמה";
+        loginError.style.display = "block";
+        return;
+    }
+
+    loginBtn.disabled = true;
+    loginBtn.textContent = "מתחבר...";
+    loginError.style.display = "none";
+
+    const { error } = await db.auth.signInWithPassword({
+        email: ADMIN_EMAIL,
+        password: password
+    });
+
+    if (error) {
+        loginError.textContent = "הסיסמה שגויה";
+        loginError.style.display = "block";
+
+        loginBtn.disabled = false;
+        loginBtn.textContent = "כניסה";
+        return;
+    }
+
+    loginScreen.style.display = "none";
+    app.style.display = "block";
+
+    loginBtn.disabled = false;
+    loginBtn.textContent = "כניסה";
+}
+
+loginBtn.addEventListener("click", login);
+
+adminPassword.addEventListener("keydown", function(event) {
+    if (event.key === "Enter") {
+        login();
+    }
+});
+
+async function checkLogin() {
+    const { data } = await db.auth.getSession();
+
+    if (data.session) {
+        loginScreen.style.display = "none";
+        app.style.display = "block";
+    } else {
+        loginScreen.style.display = "flex";
+        app.style.display = "none";
+    }
+}
+
+checkLogin();
+
 const DEFAULT_HOURLY_PRICE = 40;
+    
 const STORAGE_KEY = "snookerCustomers";
 
 const customerNameInput = document.getElementById("customerName");
