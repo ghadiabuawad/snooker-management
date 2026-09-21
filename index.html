@@ -1,180 +1,242 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Snooker Management</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Snooker Management</title>
 
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
 
-        body {
-            font-family: Arial, sans-serif;
-            background: #111827;
-            color: white;
-            min-height: 100vh;
-        }
+body{
+    font-family:Arial,sans-serif;
+    background:#111827;
+    color:white;
+    min-height:100vh
+}
 
-        header {
-            background: #0b1220;
-            padding: 22px;
-            text-align: center;
-            border-bottom: 1px solid #263244;
-        }
+header{
+    background:#0b1220;
+    padding:22px;
+    text-align:center;
+    border-bottom:1px solid #263244
+}
 
-        header h1 {
-            font-size: 28px;
-        }
+header h1{font-size:28px}
+header p{color:#9ca3af;margin-top:6px}
 
-        header p {
-            color: #9ca3af;
-            margin-top: 6px;
-        }
+.container{
+    width:90%;
+    max-width:800px;
+    margin:35px auto
+}
 
-        .container {
-            width: 90%;
-            max-width: 800px;
-            margin: 35px auto;
-        }
+.add-customer{
+    display:flex;
+    gap:10px;
+    margin-bottom:30px
+}
 
-        .add-customer {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
-        }
+input{
+    padding:12px;
+    border:none;
+    border-radius:7px;
+    font-size:16px
+}
 
-        .add-customer input {
-            flex: 1;
-            padding: 14px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-        }
+.add-customer input{flex:1}
 
-        .add-customer button {
-            padding: 14px 22px;
-            border: none;
-            border-radius: 8px;
-            background: #16a34a;
-            color: white;
-            font-size: 16px;
-            cursor: pointer;
-        }
+button{
+    border:none;
+    border-radius:7px;
+    cursor:pointer;
+    font-size:15px
+}
 
-        .section-title {
-            margin-bottom: 15px;
-        }
+.add-customer button{
+    padding:12px 20px;
+    background:#16a34a;
+    color:white
+}
 
-        .customer {
-            background: #1f2937;
-            border: 1px solid #374151;
-            border-radius: 10px;
-            margin-bottom: 12px;
-            overflow: hidden;
-        }
+.section-title{margin-bottom:15px}
 
-        .customer-header {
-            padding: 18px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-        }
+.customer{
+    background:#1f2937;
+    border:1px solid #374151;
+    border-radius:10px;
+    margin-bottom:12px;
+    overflow:hidden
+}
 
-        .customer-name {
-            font-size: 18px;
-            font-weight: bold;
-        }
+.customer-header{
+    padding:18px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    cursor:pointer
+}
 
-        .status {
-            color: #9ca3af;
-            font-size: 14px;
-            margin-top: 3px;
-        }
+.customer-name{
+    font-size:18px;
+    font-weight:bold
+}
 
-        .status.running {
-            color: #4ade80;
-        }
+.status{
+    color:#9ca3af;
+    font-size:14px;
+    margin-top:3px
+}
 
-        .arrow {
-            font-size: 18px;
-        }
+.status.running{color:#4ade80}
 
-        .customer-details {
-            display: none;
-            padding: 20px;
-            border-top: 1px solid #374151;
-            background: #18212f;
-        }
+.customer-details{
+    display:none;
+    padding:20px;
+    border-top:1px solid #374151;
+    background:#18212f
+}
 
-        .customer.open .customer-details {
-            display: block;
-        }
+.customer.open .customer-details{display:block}
 
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 12px;
-        }
+.info-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:15px;
+    margin-bottom:15px
+}
 
-        .timer {
-            font-size: 32px;
-            font-weight: bold;
-            text-align: center;
-            margin: 22px 0 10px;
-        }
+.hour-price{
+    width:100px;
+    text-align:center
+}
 
-        .game-cost {
-            text-align: center;
-            color: #4ade80;
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 22px;
-        }
+.timer{
+    font-size:32px;
+    font-weight:bold;
+    text-align:center;
+    margin:20px 0 8px
+}
 
-        .buttons {
-            display: flex;
-            gap: 10px;
-        }
+.game-cost{
+    text-align:center;
+    color:#4ade80;
+    font-size:18px;
+    font-weight:bold;
+    margin-bottom:20px
+}
 
-        .buttons button {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 7px;
-            cursor: pointer;
-            font-size: 15px;
-        }
+.buttons{
+    display:flex;
+    gap:10px;
+    margin-bottom:25px
+}
 
-        .start {
-            background: #16a34a;
-            color: white;
-        }
+.buttons button{
+    flex:1;
+    padding:12px
+}
 
-        .stop {
-            background: #dc2626;
-            color: white;
-        }
+.start{
+    background:#16a34a;
+    color:white
+}
 
-        .buttons button:disabled {
-            opacity: 0.45;
-            cursor: not-allowed;
-        }
+.stop{
+    background:#dc2626;
+    color:white
+}
 
-        @media (max-width: 600px) {
-            .add-customer {
-                flex-direction: column;
-            }
+button:disabled{
+    opacity:.45;
+    cursor:not-allowed
+}
 
-            .buttons {
-                flex-direction: column;
-            }
-        }
-    </style>
+.orders{
+    border-top:1px solid #374151;
+    padding-top:20px
+}
+
+.orders h3{
+    margin-bottom:15px
+}
+
+.add-order{
+    display:grid;
+    grid-template-columns:1fr 120px auto;
+    gap:8px;
+    margin-bottom:15px
+}
+
+.add-order button{
+    background:#2563eb;
+    color:white;
+    padding:10px 15px
+}
+
+.orders-list{
+    margin-bottom:20px
+}
+
+.order-item{
+    background:#111827;
+    padding:10px;
+    border-radius:7px;
+    margin-bottom:7px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px
+}
+
+.remove-order{
+    background:#7f1d1d;
+    color:white;
+    padding:7px 10px
+}
+
+.summary{
+    border-top:1px solid #374151;
+    padding-top:18px
+}
+
+.summary-row{
+    display:flex;
+    justify-content:space-between;
+    margin-bottom:10px
+}
+
+.total{
+    font-size:22px;
+    font-weight:bold;
+    color:#4ade80;
+    border-top:1px solid #374151;
+    padding-top:15px;
+    margin-top:15px
+}
+
+.checkout{
+    width:100%;
+    padding:14px;
+    margin-top:20px;
+    background:#f59e0b;
+    color:#111827;
+    font-weight:bold;
+    font-size:17px
+}
+
+@media(max-width:600px){
+    .add-customer,
+    .buttons{
+        flex-direction:column
+    }
+
+    .add-order{
+        grid-template-columns:1fr
+    }
+}
+</style>
 </head>
 
 <body>
@@ -187,10 +249,9 @@
 <div class="container">
 
     <div class="add-customer">
-
         <input
-            type="text"
             id="customerName"
+            type="text"
             placeholder="שם הלקוח"
             autocomplete="off"
         >
@@ -198,7 +259,6 @@
         <button id="addCustomerBtn">
             + הוסף לקוח
         </button>
-
     </div>
 
     <h2 class="section-title">לקוחות פעילים</h2>
@@ -207,10 +267,9 @@
 
 </div>
 
-
 <script>
 
-const HOURLY_PRICE = 40;
+const DEFAULT_HOURLY_PRICE = 40;
 
 const customerNameInput =
     document.getElementById("customerName");
@@ -222,7 +281,7 @@ const customersList =
     document.getElementById("customersList");
 
 
-function formatTime(totalSeconds) {
+function formatTime(totalSeconds){
 
     const hours =
         Math.floor(totalSeconds / 3600);
@@ -234,30 +293,21 @@ function formatTime(totalSeconds) {
         totalSeconds % 60;
 
     return (
-        String(hours).padStart(2, "0") + ":" +
-        String(minutes).padStart(2, "0") + ":" +
-        String(seconds).padStart(2, "0")
+        String(hours).padStart(2,"0") + ":" +
+        String(minutes).padStart(2,"0") + ":" +
+        String(seconds).padStart(2,"0")
     );
 }
 
 
-function calculateGameCost(seconds) {
+function addCustomer(){
 
-    return (seconds / 3600) * HOURLY_PRICE;
-
-}
-
-
-function addCustomer() {
-
-    const customerName =
+    const name =
         customerNameInput.value.trim();
 
-    if (customerName === "") {
-
+    if(!name){
         alert("יש להזין שם לקוח");
         return;
-
     }
 
 
@@ -272,13 +322,11 @@ function addCustomer() {
         <div class="customer-header">
 
             <div>
-
                 <div class="customer-name"></div>
 
                 <div class="status">
                     ● הזמן לא התחיל
                 </div>
-
             </div>
 
             <div class="arrow">▼</div>
@@ -292,9 +340,16 @@ function addCustomer() {
 
                 <span>מחיר לשעה</span>
 
-                <strong>
-                    ${HOURLY_PRICE} ₪
-                </strong>
+                <div>
+                    <input
+                        class="hour-price"
+                        type="number"
+                        min="0"
+                        step="1"
+                        value="${DEFAULT_HOURLY_PRICE}"
+                    >
+                    ₪
+                </div>
 
             </div>
 
@@ -321,6 +376,81 @@ function addCustomer() {
 
             </div>
 
+
+            <div class="orders">
+
+                <h3>הזמנות</h3>
+
+
+                <div class="add-order">
+
+                    <input
+                        class="order-name"
+                        type="text"
+                        placeholder="שם המוצר"
+                    >
+
+                    <input
+                        class="order-price"
+                        type="number"
+                        min="0"
+                        step="0.5"
+                        placeholder="מחיר ₪"
+                    >
+
+                    <button class="add-order-btn">
+                        + הוסף
+                    </button>
+
+                </div>
+
+
+                <div class="orders-list"></div>
+
+
+                <div class="summary">
+
+                    <div class="summary-row">
+
+                        <span>זמן משחק</span>
+
+                        <strong class="summary-game">
+                            0.00 ₪
+                        </strong>
+
+                    </div>
+
+
+                    <div class="summary-row">
+
+                        <span>הזמנות</span>
+
+                        <strong class="summary-orders">
+                            0.00 ₪
+                        </strong>
+
+                    </div>
+
+
+                    <div class="summary-row total">
+
+                        <span>סה"כ לתשלום</span>
+
+                        <strong class="summary-total">
+                            0.00 ₪
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <button class="checkout">
+                    ✓ סגור חשבון
+                </button>
+
+            </div>
+
         </div>
 
     `;
@@ -328,23 +458,26 @@ function addCustomer() {
 
     customer
         .querySelector(".customer-name")
-        .textContent = customerName;
+        .textContent = name;
 
 
-    const customerHeader =
+    const header =
         customer.querySelector(".customer-header");
 
     const arrow =
         customer.querySelector(".arrow");
 
-    const timerElement =
+    const status =
+        customer.querySelector(".status");
+
+    const timer =
         customer.querySelector(".timer");
 
-    const costElement =
+    const gameCostElement =
         customer.querySelector(".game-cost");
 
-    const statusElement =
-        customer.querySelector(".status");
+    const hourlyPriceInput =
+        customer.querySelector(".hour-price");
 
     const startButton =
         customer.querySelector(".start");
@@ -352,29 +485,197 @@ function addCustomer() {
     const stopButton =
         customer.querySelector(".stop");
 
+    const orderNameInput =
+        customer.querySelector(".order-name");
+
+    const orderPriceInput =
+        customer.querySelector(".order-price");
+
+    const addOrderButton =
+        customer.querySelector(".add-order-btn");
+
+    const ordersList =
+        customer.querySelector(".orders-list");
+
+    const summaryGame =
+        customer.querySelector(".summary-game");
+
+    const summaryOrders =
+        customer.querySelector(".summary-orders");
+
+    const summaryTotal =
+        customer.querySelector(".summary-total");
+
+    const checkoutButton =
+        customer.querySelector(".checkout");
+
 
     let totalSeconds = 0;
 
     let timerInterval = null;
 
+    let orders = [];
 
-    customerHeader.addEventListener(
+
+    function getHourlyPrice(){
+
+        const price =
+            Number(hourlyPriceInput.value);
+
+        if(!Number.isFinite(price) || price < 0){
+            return 0;
+        }
+
+        return price;
+    }
+
+
+    function getGameCost(){
+
+        return (
+            totalSeconds / 3600
+        ) * getHourlyPrice();
+
+    }
+
+
+    function getOrdersCost(){
+
+        return orders.reduce(
+            function(total,order){
+                return total + order.price;
+            },
+            0
+        );
+
+    }
+
+
+    function updateTotals(){
+
+        const gameCost =
+            getGameCost();
+
+        const ordersCost =
+            getOrdersCost();
+
+        const total =
+            gameCost + ordersCost;
+
+
+        gameCostElement.textContent =
+            "עלות משחק: " +
+            gameCost.toFixed(2) +
+            " ₪";
+
+
+        summaryGame.textContent =
+            gameCost.toFixed(2) +
+            " ₪";
+
+
+        summaryOrders.textContent =
+            ordersCost.toFixed(2) +
+            " ₪";
+
+
+        summaryTotal.textContent =
+            total.toFixed(2) +
+            " ₪";
+
+    }
+
+
+    function renderOrders(){
+
+        ordersList.innerHTML = "";
+
+
+        if(orders.length === 0){
+
+            const empty =
+                document.createElement("div");
+
+            empty.style.color = "#9ca3af";
+
+            empty.style.marginBottom = "15px";
+
+            empty.textContent =
+                "אין הזמנות עדיין";
+
+            ordersList.appendChild(empty);
+
+            return;
+
+        }
+
+
+        orders.forEach(
+            function(order,index){
+
+                const item =
+                    document.createElement("div");
+
+                item.className =
+                    "order-item";
+
+
+                const text =
+                    document.createElement("span");
+
+                text.textContent =
+                    order.name +
+                    " — " +
+                    order.price.toFixed(2) +
+                    " ₪";
+
+
+                const removeButton =
+                    document.createElement("button");
+
+                removeButton.className =
+                    "remove-order";
+
+                removeButton.textContent =
+                    "מחק";
+
+
+                removeButton.addEventListener(
+                    "click",
+                    function(){
+
+                        orders.splice(index,1);
+
+                        renderOrders();
+
+                        updateTotals();
+
+                    }
+                );
+
+
+                item.appendChild(text);
+
+                item.appendChild(removeButton);
+
+                ordersList.appendChild(item);
+
+            }
+        );
+
+    }
+
+
+    header.addEventListener(
         "click",
-        function () {
+        function(){
 
             customer.classList.toggle("open");
 
-            if (
+            arrow.textContent =
                 customer.classList.contains("open")
-            ) {
-
-                arrow.textContent = "▲";
-
-            } else {
-
-                arrow.textContent = "▼";
-
-            }
+                ? "▲"
+                : "▼";
 
         }
     );
@@ -382,19 +683,17 @@ function addCustomer() {
 
     startButton.addEventListener(
         "click",
-        function () {
+        function(){
 
-            if (timerInterval !== null) {
+            if(timerInterval !== null){
                 return;
             }
 
 
-            statusElement.textContent =
+            status.textContent =
                 "● הזמן פועל";
 
-            statusElement
-                .classList
-                .add("running");
+            status.classList.add("running");
 
 
             startButton.disabled = true;
@@ -403,27 +702,19 @@ function addCustomer() {
 
 
             timerInterval =
-                setInterval(function () {
+                setInterval(
+                    function(){
 
-                    totalSeconds++;
+                        totalSeconds++;
 
+                        timer.textContent =
+                            formatTime(totalSeconds);
 
-                    timerElement.textContent =
-                        formatTime(totalSeconds);
+                        updateTotals();
 
-
-                    const gameCost =
-                        calculateGameCost(
-                            totalSeconds
-                        );
-
-
-                    costElement.textContent =
-                        "עלות משחק: " +
-                        gameCost.toFixed(2) +
-                        " ₪";
-
-                }, 1000);
+                    },
+                    1000
+                );
 
         }
     );
@@ -431,9 +722,9 @@ function addCustomer() {
 
     stopButton.addEventListener(
         "click",
-        function () {
+        function(){
 
-            if (timerInterval === null) {
+            if(timerInterval === null){
                 return;
             }
 
@@ -443,12 +734,10 @@ function addCustomer() {
             timerInterval = null;
 
 
-            statusElement.textContent =
+            status.textContent =
                 "● הזמן נעצר";
 
-            statusElement
-                .classList
-                .remove("running");
+            status.classList.remove("running");
 
 
             startButton.disabled = false;
@@ -457,6 +746,134 @@ function addCustomer() {
 
         }
     );
+
+
+    hourlyPriceInput.addEventListener(
+        "input",
+        updateTotals
+    );
+
+
+    function addOrder(){
+
+        const orderName =
+            orderNameInput.value.trim();
+
+        const orderPrice =
+            Number(orderPriceInput.value);
+
+
+        if(!orderName){
+
+            alert("יש להזין שם מוצר");
+            return;
+
+        }
+
+
+        if(
+            !Number.isFinite(orderPrice) ||
+            orderPrice < 0
+        ){
+
+            alert("יש להזין מחיר תקין");
+            return;
+
+        }
+
+
+        orders.push({
+            name:orderName,
+            price:orderPrice
+        });
+
+
+        orderNameInput.value = "";
+
+        orderPriceInput.value = "";
+
+
+        renderOrders();
+
+        updateTotals();
+
+        orderNameInput.focus();
+
+    }
+
+
+    addOrderButton.addEventListener(
+        "click",
+        addOrder
+    );
+
+
+    orderPriceInput.addEventListener(
+        "keydown",
+        function(event){
+
+            if(event.key === "Enter"){
+                addOrder();
+            }
+
+        }
+    );
+
+
+    checkoutButton.addEventListener(
+        "click",
+        function(){
+
+            const gameCost =
+                getGameCost();
+
+            const ordersCost =
+                getOrdersCost();
+
+            const finalTotal =
+                gameCost + ordersCost;
+
+
+            const confirmed =
+                confirm(
+                    "לסגור את החשבון של " +
+                    name +
+                    "?\n\n" +
+                    "זמן משחק: " +
+                    gameCost.toFixed(2) +
+                    " ₪\n" +
+                    "הזמנות: " +
+                    ordersCost.toFixed(2) +
+                    " ₪\n\n" +
+                    'סה"כ: ' +
+                    finalTotal.toFixed(2) +
+                    " ₪"
+                );
+
+
+            if(!confirmed){
+                return;
+            }
+
+
+            if(timerInterval !== null){
+
+                clearInterval(timerInterval);
+
+                timerInterval = null;
+
+            }
+
+
+            customer.remove();
+
+        }
+    );
+
+
+    renderOrders();
+
+    updateTotals();
 
 
     customersList.appendChild(customer);
@@ -477,12 +894,10 @@ addCustomerBtn.addEventListener(
 
 customerNameInput.addEventListener(
     "keydown",
-    function(event) {
+    function(event){
 
-        if (event.key === "Enter") {
-
+        if(event.key === "Enter"){
             addCustomer();
-
         }
 
     }
