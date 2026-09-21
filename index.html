@@ -352,6 +352,14 @@ button:disabled{
         📊 היסטוריית מכירות
     </button>
 
+    <div
+        id="salesHistory"
+        style="
+            display:none;
+            margin-top:20px;
+        "
+    ></div>
+
 </div>
 
 </div>
@@ -2254,6 +2262,485 @@ setInterval(
 
     1000
 );
+    /* =========================
+   SALES HISTORY
+========================= */
+
+const salesHistoryBtn =
+    document.getElementById("salesHistoryBtn");
+
+const salesHistory =
+    document.getElementById("salesHistory");
+
+
+salesHistoryBtn.addEventListener(
+    "click",
+    loadSalesHistory
+);
+
+
+async function loadSalesHistory() {
+
+    // אם ההיסטוריה כבר פתוחה - סגור אותה
+    if (salesHistory.style.display === "block") {
+
+        salesHistory.style.display = "none";
+
+        salesHistoryBtn.textContent =
+            "📊 היסטוריית מכירות";
+
+        return;
+    }
+
+
+    salesHistoryBtn.disabled = true;
+
+    salesHistoryBtn.textContent =
+        "טוען...";
+
+
+    const { data, error } =
+        await db
+            .from("sales")
+            .select("*")
+            .order(
+                "closed_at",
+                { ascending: false }
+            );
+
+
+    salesHistoryBtn.disabled = false;
+
+
+    if (error) {
+
+        console.error(
+            "Sales history error:",
+            error
+        );
+
+        alert(
+            "שגיאה בטעינת היסטוריית המכירות"
+        );
+
+        salesHistoryBtn.textContent =
+            "📊 היסטוריית מכירות";
+
+        return;
+    }
+
+
+    salesHistory.innerHTML = "";
+
+
+    // אין מכירות
+    if (!data || data.length === 0) {
+
+        salesHistory.innerHTML = `
+            <div style="
+                background:#1f2937;
+                border:1px solid #374151;
+                border-radius:10px;
+                padding:20px;
+                text-align:center;
+                color:#9ca3af;
+            ">
+                אין מכירות עדיין
+            </div>
+        `;
+
+        salesHistory.style.display =
+            "block";
+
+        salesHistoryBtn.textContent =
+            "✖ סגור היסטוריה";
+
+        return;
+    }
+
+
+    /* =========================
+       TOTAL SALES
+    ========================= */
+
+    const totalIncome =
+        data.reduce(
+            function(total, sale) {
+
+                return total +
+                    Number(
+                        sale.total_amount || 0
+                    );
+
+            },
+            0
+        );
+
+
+    const totalBox =
+        document.createElement("div");
+
+
+    totalBox.style.cssText = `
+        background:#18212f;
+        border:1px solid #374151;
+        border-radius:10px;
+        padding:18px;
+        margin-bottom:20px;
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        font-size:18px;
+        font-weight:bold;
+    `;
+
+
+    const totalLabel =
+        document.createElement("span");
+
+    totalLabel.textContent =
+        "סה״כ מכירות";
+
+
+    const totalValue =
+        document.createElement("span");
+
+    totalValue.style.color =
+        "#4ade80";
+
+    totalValue.textContent =
+        totalIncome.toFixed(2) +
+        " ₪";
+
+
+    totalBox.appendChild(
+        totalLabel
+    );
+
+    totalBox.appendChild(
+        totalValue
+    );
+
+
+    salesHistory.appendChild(
+        totalBox
+    );
+
+
+    /* =========================
+       SALES
+    ========================= */
+
+    data.forEach(
+        function(sale) {
+
+            const card =
+                document.createElement(
+                    "div"
+                );
+
+
+            card.style.cssText = `
+                background:#1f2937;
+                border:1px solid #374151;
+                border-radius:10px;
+                padding:18px;
+                margin-bottom:12px;
+            `;
+
+
+            const topRow =
+                document.createElement(
+                    "div"
+                );
+
+
+            topRow.style.cssText = `
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+                gap:15px;
+                margin-bottom:15px;
+            `;
+
+
+            const customerName =
+                document.createElement(
+                    "strong"
+                );
+
+
+            customerName.textContent =
+                sale.customer_name ||
+                "ללא שם";
+
+
+            const dateElement =
+                document.createElement(
+                    "span"
+                );
+
+
+            dateElement.style.cssText = `
+                color:#9ca3af;
+                font-size:13px;
+            `;
+
+
+            const date =
+                new Date(
+                    sale.closed_at ||
+                    sale.created_at
+                );
+
+
+            dateElement.textContent =
+                date.toLocaleString(
+                    "he-IL"
+                );
+
+
+            topRow.appendChild(
+                customerName
+            );
+
+
+            topRow.appendChild(
+                dateElement
+            );
+
+
+            card.appendChild(
+                topRow
+            );
+
+
+            /* זמן */
+
+            const timeRow =
+                document.createElement(
+                    "div"
+                );
+
+
+            timeRow.style.cssText = `
+                display:flex;
+                justify-content:space-between;
+                margin-bottom:9px;
+            `;
+
+
+            const timeLabel =
+                document.createElement(
+                    "span"
+                );
+
+            timeLabel.textContent =
+                "זמן משחק";
+
+
+            const timeValue =
+                document.createElement(
+                    "span"
+                );
+
+            timeValue.textContent =
+                formatTime(
+                    Number(
+                        sale.elapsed_seconds ||
+                        0
+                    )
+                );
+
+
+            timeRow.appendChild(
+                timeLabel
+            );
+
+
+            timeRow.appendChild(
+                timeValue
+            );
+
+
+            card.appendChild(
+                timeRow
+            );
+
+
+            /* עלות משחק */
+
+            const gameRow =
+                document.createElement(
+                    "div"
+                );
+
+
+            gameRow.style.cssText = `
+                display:flex;
+                justify-content:space-between;
+                margin-bottom:9px;
+            `;
+
+
+            const gameLabel =
+                document.createElement(
+                    "span"
+                );
+
+            gameLabel.textContent =
+                "עלות משחק";
+
+
+            const gameValue =
+                document.createElement(
+                    "span"
+                );
+
+            gameValue.textContent =
+                Number(
+                    sale.game_cost || 0
+                ).toFixed(2) +
+                " ₪";
+
+
+            gameRow.appendChild(
+                gameLabel
+            );
+
+
+            gameRow.appendChild(
+                gameValue
+            );
+
+
+            card.appendChild(
+                gameRow
+            );
+
+
+            /* הזמנות */
+
+            const ordersRow =
+                document.createElement(
+                    "div"
+                );
+
+
+            ordersRow.style.cssText = `
+                display:flex;
+                justify-content:space-between;
+                margin-bottom:9px;
+            `;
+
+
+            const ordersLabel =
+                document.createElement(
+                    "span"
+                );
+
+            ordersLabel.textContent =
+                "הזמנות";
+
+
+            const ordersValue =
+                document.createElement(
+                    "span"
+                );
+
+            ordersValue.textContent =
+                Number(
+                    sale.orders_cost || 0
+                ).toFixed(2) +
+                " ₪";
+
+
+            ordersRow.appendChild(
+                ordersLabel
+            );
+
+
+            ordersRow.appendChild(
+                ordersValue
+            );
+
+
+            card.appendChild(
+                ordersRow
+            );
+
+
+            /* סה"כ */
+
+            const totalRow =
+                document.createElement(
+                    "div"
+                );
+
+
+            totalRow.style.cssText = `
+                display:flex;
+                justify-content:space-between;
+                border-top:1px solid #374151;
+                padding-top:12px;
+                margin-top:12px;
+                font-size:18px;
+                font-weight:bold;
+                color:#4ade80;
+            `;
+
+
+            const saleTotalLabel =
+                document.createElement(
+                    "span"
+                );
+
+            saleTotalLabel.textContent =
+                'סה"כ';
+
+
+            const saleTotalValue =
+                document.createElement(
+                    "span"
+                );
+
+            saleTotalValue.textContent =
+                Number(
+                    sale.total_amount || 0
+                ).toFixed(2) +
+                " ₪";
+
+
+            totalRow.appendChild(
+                saleTotalLabel
+            );
+
+
+            totalRow.appendChild(
+                saleTotalValue
+            );
+
+
+            card.appendChild(
+                totalRow
+            );
+
+
+            salesHistory.appendChild(
+                card
+            );
+
+        }
+    );
+
+
+    salesHistory.style.display =
+        "block";
+
+
+    salesHistoryBtn.textContent =
+        "✖ סגור היסטוריה";
+}
 
 </script>
 </body>
