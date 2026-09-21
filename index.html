@@ -270,18 +270,45 @@ button:disabled{
 <script>
 
 const DEFAULT_HOURLY_PRICE = 40;
+const STORAGE_KEY = "snookerCustomers";
 
-const customerNameInput =
-    document.getElementById("customerName");
+const customerNameInput = document.getElementById("customerName");
+const addCustomerBtn = document.getElementById("addCustomerBtn");
+const customersList = document.getElementById("customersList");
 
-const addCustomerBtn =
-    document.getElementById("addCustomerBtn");
-
-const customersList =
-    document.getElementById("customersList");
+let customers = loadCustomers();
 
 
-function formatTime(totalSeconds){
+function loadCustomers() {
+    try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+        return [];
+    }
+}
+
+
+function saveCustomers() {
+    localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(customers)
+    );
+}
+
+
+function createId() {
+    return Date.now().toString() +
+        Math.random().toString(16).slice(2);
+}
+
+
+function formatTime(totalSeconds) {
+
+    totalSeconds = Math.max(
+        0,
+        Math.floor(totalSeconds)
+    );
 
     const hours =
         Math.floor(totalSeconds / 3600);
@@ -293,596 +320,749 @@ function formatTime(totalSeconds){
         totalSeconds % 60;
 
     return (
-        String(hours).padStart(2,"0") + ":" +
-        String(minutes).padStart(2,"0") + ":" +
-        String(seconds).padStart(2,"0")
+        String(hours).padStart(2, "0") + ":" +
+        String(minutes).padStart(2, "0") + ":" +
+        String(seconds).padStart(2, "0")
     );
 }
 
 
-function addCustomer(){
+function getElapsedSeconds(customer) {
+
+    let seconds =
+        customer.elapsedSeconds || 0;
+
+    if (
+        customer.running &&
+        customer.startedAt
+    ) {
+
+        seconds += Math.floor(
+            (Date.now() - customer.startedAt) / 1000
+        );
+
+    }
+
+    return seconds;
+}
+
+
+function getGameCost(customer) {
+
+    return (
+        getElapsedSeconds(customer) / 3600
+    ) * customer.hourlyPrice;
+
+}
+
+
+function getOrdersCost(customer) {
+
+    return customer.orders.reduce(
+        function(total, order) {
+            return total + order.price;
+        },
+        0
+    );
+
+}
+
+
+function addCustomer() {
 
     const name =
         customerNameInput.value.trim();
 
-    if(!name){
+    if (!name) {
         alert("יש להזין שם לקוח");
         return;
     }
 
 
-    const customer =
-        document.createElement("div");
+    const newCustomer = {
 
-    customer.className = "customer";
+        id: createId(),
 
+        name: name,
 
-    customer.innerHTML = `
+        hourlyPrice:
+            DEFAULT_HOURLY_PRICE,
 
-        <div class="customer-header">
+        elapsedSeconds: 0,
 
-            <div>
-                <div class="customer-name"></div>
+        running: false,
 
-                <div class="status">
-                    ● הזמן לא התחיל
-                </div>
-            </div>
+        startedAt: null,
 
-            <div class="arrow">▼</div>
+        orders: [],
 
-        </div>
+        open: false
+    };
 
 
-        <div class="customer-details">
+    customers.push(newCustomer);
 
-            <div class="info-row">
+    saveCustomers();
 
-                <span>מחיר לשעה</span>
-
-                <div>
-                    <input
-                        class="hour-price"
-                        type="number"
-                        min="0"
-                        step="1"
-                        value="${DEFAULT_HOURLY_PRICE}"
-                    >
-                    ₪
-                </div>
-
-            </div>
-
-
-            <div class="timer">
-                00:00:00
-            </div>
-
-
-            <div class="game-cost">
-                עלות משחק: 0.00 ₪
-            </div>
-
-
-            <div class="buttons">
-
-                <button class="start">
-                    ▶ התחל זמן
-                </button>
-
-                <button class="stop" disabled>
-                    ■ עצור
-                </button>
-
-            </div>
-
-
-            <div class="orders">
-
-                <h3>הזמנות</h3>
-
-
-                <div class="add-order">
-
-                    <input
-                        class="order-name"
-                        type="text"
-                        placeholder="שם המוצר"
-                    >
-
-                    <input
-                        class="order-price"
-                        type="number"
-                        min="0"
-                        step="0.5"
-                        placeholder="מחיר ₪"
-                    >
-
-                    <button class="add-order-btn">
-                        + הוסף
-                    </button>
-
-                </div>
-
-
-                <div class="orders-list"></div>
-
-
-                <div class="summary">
-
-                    <div class="summary-row">
-
-                        <span>זמן משחק</span>
-
-                        <strong class="summary-game">
-                            0.00 ₪
-                        </strong>
-
-                    </div>
-
-
-                    <div class="summary-row">
-
-                        <span>הזמנות</span>
-
-                        <strong class="summary-orders">
-                            0.00 ₪
-                        </strong>
-
-                    </div>
-
-
-                    <div class="summary-row total">
-
-                        <span>סה"כ לתשלום</span>
-
-                        <strong class="summary-total">
-                            0.00 ₪
-                        </strong>
-
-                    </div>
-
-                </div>
-
-
-                <button class="checkout">
-                    ✓ סגור חשבון
-                </button>
-
-            </div>
-
-        </div>
-
-    `;
-
-
-    customer
-        .querySelector(".customer-name")
-        .textContent = name;
-
-
-    const header =
-        customer.querySelector(".customer-header");
-
-    const arrow =
-        customer.querySelector(".arrow");
-
-    const status =
-        customer.querySelector(".status");
-
-    const timer =
-        customer.querySelector(".timer");
-
-    const gameCostElement =
-        customer.querySelector(".game-cost");
-
-    const hourlyPriceInput =
-        customer.querySelector(".hour-price");
-
-    const startButton =
-        customer.querySelector(".start");
-
-    const stopButton =
-        customer.querySelector(".stop");
-
-    const orderNameInput =
-        customer.querySelector(".order-name");
-
-    const orderPriceInput =
-        customer.querySelector(".order-price");
-
-    const addOrderButton =
-        customer.querySelector(".add-order-btn");
-
-    const ordersList =
-        customer.querySelector(".orders-list");
-
-    const summaryGame =
-        customer.querySelector(".summary-game");
-
-    const summaryOrders =
-        customer.querySelector(".summary-orders");
-
-    const summaryTotal =
-        customer.querySelector(".summary-total");
-
-    const checkoutButton =
-        customer.querySelector(".checkout");
-
-
-    let totalSeconds = 0;
-
-    let timerInterval = null;
-
-    let orders = [];
-
-
-    function getHourlyPrice(){
-
-        const price =
-            Number(hourlyPriceInput.value);
-
-        if(!Number.isFinite(price) || price < 0){
-            return 0;
-        }
-
-        return price;
-    }
-
-
-    function getGameCost(){
-
-        return (
-            totalSeconds / 3600
-        ) * getHourlyPrice();
-
-    }
-
-
-    function getOrdersCost(){
-
-        return orders.reduce(
-            function(total,order){
-                return total + order.price;
-            },
-            0
-        );
-
-    }
-
-
-    function updateTotals(){
-
-        const gameCost =
-            getGameCost();
-
-        const ordersCost =
-            getOrdersCost();
-
-        const total =
-            gameCost + ordersCost;
-
-
-        gameCostElement.textContent =
-            "עלות משחק: " +
-            gameCost.toFixed(2) +
-            " ₪";
-
-
-        summaryGame.textContent =
-            gameCost.toFixed(2) +
-            " ₪";
-
-
-        summaryOrders.textContent =
-            ordersCost.toFixed(2) +
-            " ₪";
-
-
-        summaryTotal.textContent =
-            total.toFixed(2) +
-            " ₪";
-
-    }
-
-
-    function renderOrders(){
-
-        ordersList.innerHTML = "";
-
-
-        if(orders.length === 0){
-
-            const empty =
-                document.createElement("div");
-
-            empty.style.color = "#9ca3af";
-
-            empty.style.marginBottom = "15px";
-
-            empty.textContent =
-                "אין הזמנות עדיין";
-
-            ordersList.appendChild(empty);
-
-            return;
-
-        }
-
-
-        orders.forEach(
-            function(order,index){
-
-                const item =
-                    document.createElement("div");
-
-                item.className =
-                    "order-item";
-
-
-                const text =
-                    document.createElement("span");
-
-                text.textContent =
-                    order.name +
-                    " — " +
-                    order.price.toFixed(2) +
-                    " ₪";
-
-
-                const removeButton =
-                    document.createElement("button");
-
-                removeButton.className =
-                    "remove-order";
-
-                removeButton.textContent =
-                    "מחק";
-
-
-                removeButton.addEventListener(
-                    "click",
-                    function(){
-
-                        orders.splice(index,1);
-
-                        renderOrders();
-
-                        updateTotals();
-
-                    }
-                );
-
-
-                item.appendChild(text);
-
-                item.appendChild(removeButton);
-
-                ordersList.appendChild(item);
-
-            }
-        );
-
-    }
-
-
-    header.addEventListener(
-        "click",
-        function(){
-
-            customer.classList.toggle("open");
-
-            arrow.textContent =
-                customer.classList.contains("open")
-                ? "▲"
-                : "▼";
-
-        }
-    );
-
-
-    startButton.addEventListener(
-        "click",
-        function(){
-
-            if(timerInterval !== null){
-                return;
-            }
-
-
-            status.textContent =
-                "● הזמן פועל";
-
-            status.classList.add("running");
-
-
-            startButton.disabled = true;
-
-            stopButton.disabled = false;
-
-
-            timerInterval =
-                setInterval(
-                    function(){
-
-                        totalSeconds++;
-
-                        timer.textContent =
-                            formatTime(totalSeconds);
-
-                        updateTotals();
-
-                    },
-                    1000
-                );
-
-        }
-    );
-
-
-    stopButton.addEventListener(
-        "click",
-        function(){
-
-            if(timerInterval === null){
-                return;
-            }
-
-
-            clearInterval(timerInterval);
-
-            timerInterval = null;
-
-
-            status.textContent =
-                "● הזמן נעצר";
-
-            status.classList.remove("running");
-
-
-            startButton.disabled = false;
-
-            stopButton.disabled = true;
-
-        }
-    );
-
-
-    hourlyPriceInput.addEventListener(
-        "input",
-        updateTotals
-    );
-
-
-    function addOrder(){
-
-        const orderName =
-            orderNameInput.value.trim();
-
-        const orderPrice =
-            Number(orderPriceInput.value);
-
-
-        if(!orderName){
-
-            alert("יש להזין שם מוצר");
-            return;
-
-        }
-
-
-        if(
-            !Number.isFinite(orderPrice) ||
-            orderPrice < 0
-        ){
-
-            alert("יש להזין מחיר תקין");
-            return;
-
-        }
-
-
-        orders.push({
-            name:orderName,
-            price:orderPrice
-        });
-
-
-        orderNameInput.value = "";
-
-        orderPriceInput.value = "";
-
-
-        renderOrders();
-
-        updateTotals();
-
-        orderNameInput.focus();
-
-    }
-
-
-    addOrderButton.addEventListener(
-        "click",
-        addOrder
-    );
-
-
-    orderPriceInput.addEventListener(
-        "keydown",
-        function(event){
-
-            if(event.key === "Enter"){
-                addOrder();
-            }
-
-        }
-    );
-
-
-    checkoutButton.addEventListener(
-        "click",
-        function(){
-
-            const gameCost =
-                getGameCost();
-
-            const ordersCost =
-                getOrdersCost();
-
-            const finalTotal =
-                gameCost + ordersCost;
-
-
-            const confirmed =
-                confirm(
-                    "לסגור את החשבון של " +
-                    name +
-                    "?\n\n" +
-                    "זמן משחק: " +
-                    gameCost.toFixed(2) +
-                    " ₪\n" +
-                    "הזמנות: " +
-                    ordersCost.toFixed(2) +
-                    " ₪\n\n" +
-                    'סה"כ: ' +
-                    finalTotal.toFixed(2) +
-                    " ₪"
-                );
-
-
-            if(!confirmed){
-                return;
-            }
-
-
-            if(timerInterval !== null){
-
-                clearInterval(timerInterval);
-
-                timerInterval = null;
-
-            }
-
-
-            customer.remove();
-
-        }
-    );
-
-
-    renderOrders();
-
-    updateTotals();
-
-
-    customersList.appendChild(customer);
+    renderCustomers();
 
 
     customerNameInput.value = "";
 
     customerNameInput.focus();
+}
 
+
+function renderCustomers() {
+
+    customersList.innerHTML = "";
+
+
+    customers.forEach(function(customer) {
+
+        const customerElement =
+            document.createElement("div");
+
+        customerElement.className =
+            "customer";
+
+        if (customer.open) {
+            customerElement.classList.add("open");
+        }
+
+
+        customerElement.innerHTML = `
+
+            <div class="customer-header">
+
+                <div>
+
+                    <div class="customer-name"></div>
+
+                    <div class="status"></div>
+
+                </div>
+
+                <div class="arrow">
+                    ${customer.open ? "▲" : "▼"}
+                </div>
+
+            </div>
+
+
+            <div class="customer-details">
+
+                <div class="info-row">
+
+                    <span>מחיר לשעה</span>
+
+                    <div>
+
+                        <input
+                            class="hour-price"
+                            type="number"
+                            min="0"
+                            step="1"
+                        >
+
+                        ₪
+
+                    </div>
+
+                </div>
+
+
+                <div class="timer">
+                    00:00:00
+                </div>
+
+
+                <div class="game-cost">
+                    עלות משחק: 0.00 ₪
+                </div>
+
+
+                <div class="buttons">
+
+                    <button class="start">
+                        ▶ התחל זמן
+                    </button>
+
+                    <button class="stop">
+                        ■ עצור
+                    </button>
+
+                </div>
+
+
+                <div class="orders">
+
+                    <h3>הזמנות</h3>
+
+
+                    <div class="add-order">
+
+                        <input
+                            class="order-name"
+                            type="text"
+                            placeholder="שם המוצר"
+                        >
+
+                        <input
+                            class="order-price"
+                            type="number"
+                            min="0"
+                            step="0.5"
+                            placeholder="מחיר ₪"
+                        >
+
+                        <button class="add-order-btn">
+                            + הוסף
+                        </button>
+
+                    </div>
+
+
+                    <div class="orders-list"></div>
+
+
+                    <div class="summary">
+
+                        <div class="summary-row">
+
+                            <span>זמן משחק</span>
+
+                            <strong class="summary-game">
+                                0.00 ₪
+                            </strong>
+
+                        </div>
+
+
+                        <div class="summary-row">
+
+                            <span>הזמנות</span>
+
+                            <strong class="summary-orders">
+                                0.00 ₪
+                            </strong>
+
+                        </div>
+
+
+                        <div class="summary-row total">
+
+                            <span>סה"כ לתשלום</span>
+
+                            <strong class="summary-total">
+                                0.00 ₪
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+
+                    <button class="checkout">
+                        ✓ סגור חשבון
+                    </button>
+
+                </div>
+
+            </div>
+        `;
+
+
+        const nameElement =
+            customerElement.querySelector(
+                ".customer-name"
+            );
+
+        const statusElement =
+            customerElement.querySelector(
+                ".status"
+            );
+
+        const header =
+            customerElement.querySelector(
+                ".customer-header"
+            );
+
+        const timerElement =
+            customerElement.querySelector(
+                ".timer"
+            );
+
+        const gameCostElement =
+            customerElement.querySelector(
+                ".game-cost"
+            );
+
+        const hourlyPriceInput =
+            customerElement.querySelector(
+                ".hour-price"
+            );
+
+        const startButton =
+            customerElement.querySelector(
+                ".start"
+            );
+
+        const stopButton =
+            customerElement.querySelector(
+                ".stop"
+            );
+
+        const orderNameInput =
+            customerElement.querySelector(
+                ".order-name"
+            );
+
+        const orderPriceInput =
+            customerElement.querySelector(
+                ".order-price"
+            );
+
+        const addOrderButton =
+            customerElement.querySelector(
+                ".add-order-btn"
+            );
+
+        const ordersList =
+            customerElement.querySelector(
+                ".orders-list"
+            );
+
+        const summaryGame =
+            customerElement.querySelector(
+                ".summary-game"
+            );
+
+        const summaryOrders =
+            customerElement.querySelector(
+                ".summary-orders"
+            );
+
+        const summaryTotal =
+            customerElement.querySelector(
+                ".summary-total"
+            );
+
+        const checkoutButton =
+            customerElement.querySelector(
+                ".checkout"
+            );
+
+
+        nameElement.textContent =
+            customer.name;
+
+        hourlyPriceInput.value =
+            customer.hourlyPrice;
+
+
+        function updateDisplay() {
+
+            const seconds =
+                getElapsedSeconds(customer);
+
+            const gameCost =
+                getGameCost(customer);
+
+            const ordersCost =
+                getOrdersCost(customer);
+
+            const total =
+                gameCost + ordersCost;
+
+
+            timerElement.textContent =
+                formatTime(seconds);
+
+
+            gameCostElement.textContent =
+                "עלות משחק: " +
+                gameCost.toFixed(2) +
+                " ₪";
+
+
+            summaryGame.textContent =
+                gameCost.toFixed(2) +
+                " ₪";
+
+
+            summaryOrders.textContent =
+                ordersCost.toFixed(2) +
+                " ₪";
+
+
+            summaryTotal.textContent =
+                total.toFixed(2) +
+                " ₪";
+
+
+            if (customer.running) {
+
+                statusElement.textContent =
+                    "● הזמן פועל";
+
+                statusElement.classList.add(
+                    "running"
+                );
+
+                startButton.disabled = true;
+                stopButton.disabled = false;
+
+            } else {
+
+                statusElement.classList.remove(
+                    "running"
+                );
+
+                if (
+                    customer.elapsedSeconds > 0
+                ) {
+
+                    statusElement.textContent =
+                        "● הזמן נעצר";
+
+                } else {
+
+                    statusElement.textContent =
+                        "● הזמן לא התחיל";
+
+                }
+
+                startButton.disabled = false;
+                stopButton.disabled = true;
+            }
+        }
+
+
+        function renderOrders() {
+
+            ordersList.innerHTML = "";
+
+
+            if (customer.orders.length === 0) {
+
+                const empty =
+                    document.createElement("div");
+
+                empty.style.color =
+                    "#9ca3af";
+
+                empty.style.marginBottom =
+                    "15px";
+
+                empty.textContent =
+                    "אין הזמנות עדיין";
+
+                ordersList.appendChild(empty);
+
+                return;
+            }
+
+
+            customer.orders.forEach(
+                function(order, index) {
+
+                    const item =
+                        document.createElement("div");
+
+                    item.className =
+                        "order-item";
+
+
+                    const text =
+                        document.createElement("span");
+
+                    text.textContent =
+                        order.name +
+                        " — " +
+                        order.price.toFixed(2) +
+                        " ₪";
+
+
+                    const removeButton =
+                        document.createElement("button");
+
+                    removeButton.className =
+                        "remove-order";
+
+                    removeButton.textContent =
+                        "מחק";
+
+
+                    removeButton.addEventListener(
+                        "click",
+                        function() {
+
+                            customer.orders.splice(
+                                index,
+                                1
+                            );
+
+                            saveCustomers();
+
+                            renderOrders();
+
+                            updateDisplay();
+                        }
+                    );
+
+
+                    item.appendChild(text);
+
+                    item.appendChild(
+                        removeButton
+                    );
+
+                    ordersList.appendChild(item);
+                }
+            );
+        }
+
+
+        header.addEventListener(
+            "click",
+            function() {
+
+                customer.open =
+                    !customer.open;
+
+                saveCustomers();
+
+                renderCustomers();
+            }
+        );
+
+
+        startButton.addEventListener(
+            "click",
+            function() {
+
+                if (customer.running) {
+                    return;
+                }
+
+
+                customer.running = true;
+
+                customer.startedAt =
+                    Date.now();
+
+
+                saveCustomers();
+
+                updateDisplay();
+            }
+        );
+
+
+        stopButton.addEventListener(
+            "click",
+            function() {
+
+                if (!customer.running) {
+                    return;
+                }
+
+
+                const extraSeconds =
+                    Math.floor(
+                        (
+                            Date.now() -
+                            customer.startedAt
+                        ) / 1000
+                    );
+
+
+                customer.elapsedSeconds +=
+                    extraSeconds;
+
+
+                customer.running = false;
+
+                customer.startedAt = null;
+
+
+                saveCustomers();
+
+                updateDisplay();
+            }
+        );
+
+
+        hourlyPriceInput.addEventListener(
+            "input",
+            function() {
+
+                const newPrice =
+                    Number(
+                        hourlyPriceInput.value
+                    );
+
+
+                if (
+                    Number.isFinite(newPrice) &&
+                    newPrice >= 0
+                ) {
+
+                    customer.hourlyPrice =
+                        newPrice;
+
+                    saveCustomers();
+
+                    updateDisplay();
+                }
+            }
+        );
+
+
+        function addOrder() {
+
+            const orderName =
+                orderNameInput.value.trim();
+
+            const orderPrice =
+                Number(
+                    orderPriceInput.value
+                );
+
+
+            if (!orderName) {
+
+                alert(
+                    "יש להזין שם מוצר"
+                );
+
+                return;
+            }
+
+
+            if (
+                !Number.isFinite(orderPrice) ||
+                orderPrice < 0
+            ) {
+
+                alert(
+                    "יש להזין מחיר תקין"
+                );
+
+                return;
+            }
+
+
+            customer.orders.push({
+
+                name: orderName,
+
+                price: orderPrice
+
+            });
+
+
+            saveCustomers();
+
+
+            orderNameInput.value = "";
+
+            orderPriceInput.value = "";
+
+
+            renderOrders();
+
+            updateDisplay();
+
+            orderNameInput.focus();
+        }
+
+
+        addOrderButton.addEventListener(
+            "click",
+            addOrder
+        );
+
+
+        orderPriceInput.addEventListener(
+            "keydown",
+            function(event) {
+
+                if (event.key === "Enter") {
+                    addOrder();
+                }
+            }
+        );
+
+
+        checkoutButton.addEventListener(
+            "click",
+            function() {
+
+                const gameCost =
+                    getGameCost(customer);
+
+                const ordersCost =
+                    getOrdersCost(customer);
+
+                const finalTotal =
+                    gameCost + ordersCost;
+
+
+                const confirmed =
+                    confirm(
+
+                        "לסגור את החשבון של " +
+                        customer.name +
+                        "?\n\n" +
+
+                        "זמן משחק: " +
+                        gameCost.toFixed(2) +
+                        " ₪\n" +
+
+                        "הזמנות: " +
+                        ordersCost.toFixed(2) +
+                        " ₪\n\n" +
+
+                        'סה"כ: ' +
+                        finalTotal.toFixed(2) +
+                        " ₪"
+                    );
+
+
+                if (!confirmed) {
+                    return;
+                }
+
+
+                customers =
+                    customers.filter(
+                        function(item) {
+
+                            return (
+                                item.id !==
+                                customer.id
+                            );
+                        }
+                    );
+
+
+                saveCustomers();
+
+                renderCustomers();
+            }
+        );
+
+
+        renderOrders();
+
+        updateDisplay();
+
+        customersList.appendChild(
+            customerElement
+        );
+    });
 }
 
 
@@ -894,16 +1074,115 @@ addCustomerBtn.addEventListener(
 
 customerNameInput.addEventListener(
     "keydown",
-    function(event){
+    function(event) {
 
-        if(event.key === "Enter"){
+        if (event.key === "Enter") {
             addCustomer();
         }
-
     }
 );
 
-</script>
 
+/*
+    מרענן את התצוגה כל שנייה.
+    הזמן עצמו מחושב לפי השעון האמיתי,
+    ולכן סגירת האתר לא עוצרת אותו.
+*/
+setInterval(
+    function() {
+
+        const customerElements =
+            customersList.querySelectorAll(
+                ".customer"
+            );
+
+
+        customerElements.forEach(
+            function(element, index) {
+
+                const customer =
+                    customers[index];
+
+                if (
+                    !customer ||
+                    !customer.running
+                ) {
+                    return;
+                }
+
+
+                const timer =
+                    element.querySelector(
+                        ".timer"
+                    );
+
+                const gameCostElement =
+                    element.querySelector(
+                        ".game-cost"
+                    );
+
+                const summaryGame =
+                    element.querySelector(
+                        ".summary-game"
+                    );
+
+                const summaryOrders =
+                    element.querySelector(
+                        ".summary-orders"
+                    );
+
+                const summaryTotal =
+                    element.querySelector(
+                        ".summary-total"
+                    );
+
+
+                const seconds =
+                    getElapsedSeconds(customer);
+
+                const gameCost =
+                    getGameCost(customer);
+
+                const ordersCost =
+                    getOrdersCost(customer);
+
+                const total =
+                    gameCost + ordersCost;
+
+
+                timer.textContent =
+                    formatTime(seconds);
+
+
+                gameCostElement.textContent =
+                    "עלות משחק: " +
+                    gameCost.toFixed(2) +
+                    " ₪";
+
+
+                summaryGame.textContent =
+                    gameCost.toFixed(2) +
+                    " ₪";
+
+
+                summaryOrders.textContent =
+                    ordersCost.toFixed(2) +
+                    " ₪";
+
+
+                summaryTotal.textContent =
+                    total.toFixed(2) +
+                    " ₪";
+            }
+        );
+
+    },
+    1000
+);
+
+
+renderCustomers();
+
+</script>
 </body>
 </html>
