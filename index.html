@@ -1721,6 +1721,65 @@ function renderCustomers() {
                 }
             );
 
+            /* =========================
+                  RESET TIMER
+           ========================= */
+
+resetTimeButton.addEventListener(
+    "click",
+    async function() {
+
+        const confirmed =
+            confirm(
+                "האם אתה בטוח שברצונך לאפס את הזמן של " +
+                customer.name +
+                "?"
+            );
+
+        if (!confirmed) {
+            return;
+        }
+
+        const oldElapsed =
+            customer.elapsedSeconds;
+
+        const oldRunning =
+            customer.running;
+
+        const oldStartedAt =
+            customer.startedAt;
+
+
+        customer.elapsedSeconds = 0;
+        customer.running = false;
+        customer.startedAt = null;
+
+        updateDisplay();
+
+
+        const ok =
+            await saveCustomer(customer);
+
+
+        if (!ok) {
+
+            customer.elapsedSeconds =
+                oldElapsed;
+
+            customer.running =
+                oldRunning;
+
+            customer.startedAt =
+                oldStartedAt;
+
+            updateDisplay();
+
+            return;
+        }
+
+        alert("✅ הזמן אופס");
+    }
+);
 
             /* =========================
                HOURLY PRICE
