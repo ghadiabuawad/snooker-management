@@ -349,128 +349,192 @@ const db = window.supabase.createClient(
     SUPABASE_KEY
 );
 
-console.log("Supabase connected");
-
 const loginScreen = document.getElementById("loginScreen");
 const app = document.getElementById("app");
 const adminPassword = document.getElementById("adminPassword");
 const loginBtn = document.getElementById("loginBtn");
 const loginError = document.getElementById("loginError");
 
-// האימייל של חשבון בעל העסק ב-Supabase
 const ADMIN_EMAIL = "ghadiabo@gmail.com";
 
+const DEFAULT_HOURLY_PRICE = 40;
+
+const customerNameInput =
+    document.getElementById("customerName");
+
+const addCustomerBtn =
+    document.getElementById("addCustomerBtn");
+
+const customersList =
+    document.getElementById("customersList");
+
+let customers = [];
+
+
+/* =========================
+   LOGIN
+========================= */
+
 async function login() {
-    const password = adminPassword.value;
+
+    const password =
+        adminPassword.value;
 
     if (!password) {
-        loginError.textContent = "נא להזין סיסמה";
-        loginError.style.display = "block";
+
+        loginError.textContent =
+            "נא להזין סיסמה";
+
+        loginError.style.display =
+            "block";
+
         return;
     }
 
     loginBtn.disabled = true;
-    loginBtn.textContent = "מתחבר...";
-    loginError.style.display = "none";
 
-    const { error } = await db.auth.signInWithPassword({
-        email: ADMIN_EMAIL,
-        password: password
-    });
+    loginBtn.textContent =
+        "מתחבר...";
+
+    loginError.style.display =
+        "none";
+
+
+    const { error } =
+        await db.auth.signInWithPassword({
+
+            email: ADMIN_EMAIL,
+
+            password: password
+
+        });
+
 
     if (error) {
-        loginError.textContent = "הסיסמה שגויה";
-        loginError.style.display = "block";
+
+        loginError.textContent =
+            "הסיסמה שגויה";
+
+        loginError.style.display =
+            "block";
 
         loginBtn.disabled = false;
-        loginBtn.textContent = "כניסה";
+
+        loginBtn.textContent =
+            "כניסה";
+
         return;
     }
 
-    loginScreen.style.display = "none";
-    app.style.display = "block";
+
+    loginScreen.style.display =
+        "none";
+
+    app.style.display =
+        "block";
+
+
+    await loadCustomersFromSupabase();
+
 
     loginBtn.disabled = false;
-    loginBtn.textContent = "כניסה";
+
+    loginBtn.textContent =
+        "כניסה";
 }
 
-loginBtn.addEventListener("click", login);
 
-adminPassword.addEventListener("keydown", function(event) {
-    if (event.key === "Enter") {
-        login();
+loginBtn.addEventListener(
+    "click",
+    login
+);
+
+
+adminPassword.addEventListener(
+    "keydown",
+    function(event) {
+
+        if (event.key === "Enter") {
+
+            login();
+
+        }
+
     }
-});
+);
+
 
 async function checkLogin() {
-    const { data } = await db.auth.getSession();
+
+    const { data } =
+        await db.auth.getSession();
+
 
     if (data.session) {
-        loginScreen.style.display = "none";
-        app.style.display = "block";
+
+        loginScreen.style.display =
+            "none";
+
+        app.style.display =
+            "block";
+
+
+        await loadCustomersFromSupabase();
+
     } else {
-        loginScreen.style.display = "flex";
-        app.style.display = "none";
+
+        loginScreen.style.display =
+            "flex";
+
+        app.style.display =
+            "none";
+
     }
 }
+
 
 checkLogin();
 
-const DEFAULT_HOURLY_PRICE = 40;
-    
-const STORAGE_KEY = "snookerCustomers";
 
-const customerNameInput = document.getElementById("customerName");
-const addCustomerBtn = document.getElementById("addCustomerBtn");
-const customersList = document.getElementById("customersList");
-
-let customers = loadCustomers();
-
-
-function loadCustomers() {
-    try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        return saved ? JSON.parse(saved) : [];
-    } catch (error) {
-        return [];
-    }
-}
-
-
-function saveCustomers() {
-    localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(customers)
-    );
-}
-
-
-function createId() {
-    return Date.now().toString() +
-        Math.random().toString(16).slice(2);
-}
-
+/* =========================
+   TIME
+========================= */
 
 function formatTime(totalSeconds) {
 
-    totalSeconds = Math.max(
-        0,
-        Math.floor(totalSeconds)
-    );
+    totalSeconds =
+        Math.max(
+            0,
+            Math.floor(totalSeconds)
+        );
+
 
     const hours =
-        Math.floor(totalSeconds / 3600);
+        Math.floor(
+            totalSeconds / 3600
+        );
+
 
     const minutes =
-        Math.floor((totalSeconds % 3600) / 60);
+        Math.floor(
+            (totalSeconds % 3600) / 60
+        );
+
 
     const seconds =
         totalSeconds % 60;
 
+
     return (
-        String(hours).padStart(2, "0") + ":" +
-        String(minutes).padStart(2, "0") + ":" +
+
+        String(hours).padStart(2, "0")
+        + ":" +
+
+        String(minutes).padStart(2, "0")
+        + ":" +
+
         String(seconds).padStart(2, "0")
+
     );
 }
 
@@ -478,828 +542,709 @@ function formatTime(totalSeconds) {
 function getElapsedSeconds(customer) {
 
     let seconds =
-        customer.elapsedSeconds || 0;
+        Number(
+            customer.elapsedSeconds
+        ) || 0;
+
 
     if (
         customer.running &&
         customer.startedAt
     ) {
 
-        seconds += Math.floor(
-            (Date.now() - customer.startedAt) / 1000
-        );
+        seconds +=
+            Math.floor(
+                (
+                    Date.now() -
+                    customer.startedAt
+                ) / 1000
+            );
 
     }
 
-    return seconds;
+
+    return Math.max(
+        0,
+        seconds
+    );
 }
 
 
 function getGameCost(customer) {
 
     return (
-        getElapsedSeconds(customer) / 3600
-    ) * customer.hourlyPrice;
 
+        getElapsedSeconds(customer)
+        / 3600
+
+    ) * Number(
+        customer.hourlyPrice || 0
+    );
 }
 
 
 function getOrdersCost(customer) {
 
     return customer.orders.reduce(
+
         function(total, order) {
-            return total + order.price;
+
+            return (
+                total +
+                Number(order.price || 0)
+            );
+
         },
+
         0
     );
-
 }
 
 
-function addCustomer() {
+/* =========================
+   LOAD FROM DATABASE
+========================= */
 
-    const name =
-        customerNameInput.value.trim();
+async function loadCustomersFromSupabase() {
 
-    if (!name) {
-        alert("יש להזין שם לקוח");
+    const { data, error } =
+        await db
+
+            .from("active_sessions")
+
+            .select(`
+                *,
+                orders (*)
+            `)
+
+            .order(
+                "created_at",
+                { ascending: true }
+            );
+
+
+    if (error) {
+
+        console.error(
+            "Load customers error:",
+            error
+        );
+
+        alert(
+            "שגיאה בטעינת הנתונים מהשרת"
+        );
+
         return;
     }
 
 
-    const newCustomer = {
+    customers =
+        (data || []).map(
 
-        id: createId(),
+            function(row) {
 
-        name: name,
+                return {
+
+                    id: row.id,
+
+                    name:
+                        row.customer_name,
+
+                    hourlyPrice:
+                        Number(
+                            row.hourly_price ??
+                            DEFAULT_HOURLY_PRICE
+                        ),
+
+                    elapsedSeconds:
+                        Number(
+                            row.elapsed_seconds ??
+                            0
+                        ),
+
+                    running:
+                        Boolean(
+                            row.running
+                        ),
+
+                    startedAt:
+                        row.started_at
+                            ? new Date(
+                                row.started_at
+                            ).getTime()
+                            : null,
+
+                    orders:
+                        (row.orders || []).map(
+
+                            function(order) {
+
+                                return {
+
+                                    id:
+                                        order.id,
+
+                                    name:
+                                        order.product_name,
+
+                                    price:
+                                        Number(
+                                            order.price || 0
+                                        )
+
+                                };
+
+                            }
+                        ),
+
+                    open: false
+
+                };
+
+            }
+        );
+
+
+    renderCustomers();
+}
+
+
+/* =========================
+   SAVE ACTIVE SESSION
+========================= */
+
+async function saveCustomer(customer) {
+
+    const { error } =
+        await db
+
+            .from("active_sessions")
+
+            .update({
+
+                customer_name:
+                    customer.name,
+
+                hourly_price:
+                    Number(
+                        customer.hourlyPrice || 0
+                    ),
+
+                elapsed_seconds:
+                    Number(
+                        customer.elapsedSeconds || 0
+                    ),
+
+                running:
+                    Boolean(
+                        customer.running
+                    ),
+
+                started_at:
+                    customer.startedAt
+                        ? new Date(
+                            customer.startedAt
+                        ).toISOString()
+                        : null,
+
+                updated_at:
+                    new Date().toISOString()
+
+            })
+
+            .eq(
+                "id",
+                customer.id
+            );
+
+
+    if (error) {
+
+        console.error(
+            "Save customer error:",
+            error
+        );
+
+        alert(
+            "שגיאה בשמירת הנתונים"
+        );
+
+        return false;
+    }
+
+
+    return true;
+}
+
+
+/* =========================
+   ADD CUSTOMER
+========================= */
+
+async function addCustomer() {
+
+    const name =
+        customerNameInput
+            .value
+            .trim();
+
+
+    if (!name) {
+
+        alert(
+            "יש להזין שם לקוח"
+        );
+
+        return;
+    }
+
+
+    addCustomerBtn.disabled =
+        true;
+
+
+    const { data, error } =
+        await db
+
+            .from("active_sessions")
+
+            .insert({
+
+                customer_name:
+                    name,
+
+                hourly_price:
+                    DEFAULT_HOURLY_PRICE,
+
+                elapsed_seconds:
+                    0,
+
+                running:
+                    false,
+
+                started_at:
+                    null,
+
+                updated_at:
+                    new Date().toISOString()
+
+            })
+
+            .select()
+
+            .single();
+
+
+    addCustomerBtn.disabled =
+        false;
+
+
+    if (error) {
+
+        console.error(
+            "Add customer error:",
+            error
+        );
+
+        alert(
+            "שגיאה בהוספת הלקוח"
+        );
+
+        return;
+    }
+
+
+    customers.push({
+
+        id:
+            data.id,
+
+        name:
+            data.customer_name,
 
         hourlyPrice:
-            DEFAULT_HOURLY_PRICE,
+            Number(
+                data.hourly_price ??
+                DEFAULT_HOURLY_PRICE
+            ),
 
-        elapsedSeconds: 0,
+        elapsedSeconds:
+            Number(
+                data.elapsed_seconds ??
+                0
+            ),
 
-        running: false,
+        running:
+            Boolean(
+                data.running
+            ),
 
-        startedAt: null,
+        startedAt:
+            data.started_at
+                ? new Date(
+                    data.started_at
+                ).getTime()
+                : null,
 
         orders: [],
 
         open: false
-    };
+
+    });
 
 
-    customers.push(newCustomer);
+    customerNameInput.value =
+        "";
 
-    saveCustomers();
 
     renderCustomers();
 
-
-    customerNameInput.value = "";
 
     customerNameInput.focus();
 }
 
 
+/* =========================
+   RENDER CUSTOMERS
+========================= */
+
 function renderCustomers() {
 
-    customersList.innerHTML = "";
+    customersList.innerHTML =
+        "";
 
 
-    customers.forEach(function(customer) {
+    customers.forEach(
 
-        const customerElement =
-            document.createElement("div");
+        function(customer) {
 
-        customerElement.className =
-            "customer";
-
-        if (customer.open) {
-            customerElement.classList.add("open");
-        }
+            const customerElement =
+                document.createElement(
+                    "div"
+                );
 
 
-        customerElement.innerHTML = `
-
-            <div class="customer-header">
-
-                <div>
-
-                    <div class="customer-name"></div>
-
-                    <div class="status"></div>
-
-                </div>
-
-                <div class="arrow">
-                    ${customer.open ? "▲" : "▼"}
-                </div>
-
-            </div>
+            customerElement.className =
+                "customer";
 
 
-            <div class="customer-details">
+            if (customer.open) {
 
-                <div class="info-row">
+                customerElement
+                    .classList
+                    .add("open");
 
-                    <span>מחיר לשעה</span>
+            }
+
+
+            customerElement.innerHTML = `
+
+                <div class="customer-header">
 
                     <div>
 
-                        <input
-                            class="hour-price"
-                            type="number"
-                            min="0"
-                            step="1"
-                        >
+                        <div class="customer-name">
+                        </div>
 
-                        ₪
+                        <div class="status">
+                        </div>
 
+                    </div>
+
+                    <div class="arrow">
+                        ${customer.open ? "▲" : "▼"}
                     </div>
 
                 </div>
 
 
-                <div class="timer">
-                    00:00:00
-                </div>
+                <div class="customer-details">
+
+                    <div class="info-row">
+
+                        <span>
+                            מחיר לשעה
+                        </span>
+
+                        <div>
+
+                            <input
+                                class="hour-price"
+                                type="number"
+                                min="0"
+                                step="1"
+                            >
+
+                            ₪
+
+                        </div>
+
+                    </div>
 
 
-                <div class="game-cost">
-                    עלות משחק: 0.00 ₪
-                </div>
+                    <div class="timer">
+                        00:00:00
+                    </div>
 
 
-                <div class="buttons">
-
-                    <button class="start">
-                        ▶ התחל זמן
-                    </button>
-
-                    <button class="stop">
-                        ■ עצור
-                    </button>
-
-                </div>
+                    <div class="game-cost">
+                        עלות משחק: 0.00 ₪
+                    </div>
 
 
-                <div class="orders">
+                    <div class="buttons">
 
-                    <h3>הזמנות</h3>
+                        <button class="start">
+                            ▶ התחל זמן
+                        </button>
 
-
-                    <div class="add-order">
-
-                        <input
-                            class="order-name"
-                            type="text"
-                            placeholder="שם המוצר"
-                        >
-
-                        <input
-                            class="order-price"
-                            type="number"
-                            min="0"
-                            step="0.5"
-                            placeholder="מחיר ₪"
-                        >
-
-                        <button class="add-order-btn">
-                            + הוסף
+                        <button class="stop">
+                            ■ עצור
                         </button>
 
                     </div>
 
 
-                    <div class="orders-list"></div>
+                    <div class="orders">
+
+                        <h3>
+                            הזמנות
+                        </h3>
 
 
-                    <div class="summary">
+                        <div class="add-order">
 
-                        <div class="summary-row">
+                            <input
+                                class="order-name"
+                                type="text"
+                                placeholder="שם המוצר"
+                            >
 
-                            <span>זמן משחק</span>
+                            <input
+                                class="order-price"
+                                type="number"
+                                min="0"
+                                step="0.5"
+                                placeholder="מחיר ₪"
+                            >
 
-                            <strong class="summary-game">
-                                0.00 ₪
-                            </strong>
+                            <button class="add-order-btn">
+                                + הוסף
+                            </button>
+
+                        </div>
+
+
+                        <div class="orders-list">
+                        </div>
+
+
+                        <div class="summary">
+
+                            <div class="summary-row">
+
+                                <span>
+                                    זמן משחק
+                                </span>
+
+                                <strong class="summary-game">
+                                    0.00 ₪
+                                </strong>
+
+                            </div>
+
+
+                            <div class="summary-row">
+
+                                <span>
+                                    הזמנות
+                                </span>
+
+                                <strong class="summary-orders">
+                                    0.00 ₪
+                                </strong>
+
+                            </div>
+
+
+                            <div class="summary-row total">
+
+                                <span>
+                                    סה"כ לתשלום
+                                </span>
+
+                                <strong class="summary-total">
+                                    0.00 ₪
+                                </strong>
+
+                            </div>
 
                         </div>
 
 
-                        <div class="summary-row">
-
-                            <span>הזמנות</span>
-
-                            <strong class="summary-orders">
-                                0.00 ₪
-                            </strong>
-
-                        </div>
-
-
-                        <div class="summary-row total">
-
-                            <span>סה"כ לתשלום</span>
-
-                            <strong class="summary-total">
-                                0.00 ₪
-                            </strong>
-
-                        </div>
+                        <button class="checkout">
+                            ✓ סגור חשבון
+                        </button>
 
                     </div>
 
-
-                    <button class="checkout">
-                        ✓ סגור חשבון
-                    </button>
-
                 </div>
+            `;
 
-            </div>
-        `;
 
-
-        const nameElement =
-            customerElement.querySelector(
-                ".customer-name"
-            );
-
-        const statusElement =
-            customerElement.querySelector(
-                ".status"
-            );
-
-        const header =
-            customerElement.querySelector(
-                ".customer-header"
-            );
-
-        const timerElement =
-            customerElement.querySelector(
-                ".timer"
-            );
-
-        const gameCostElement =
-            customerElement.querySelector(
-                ".game-cost"
-            );
-
-        const hourlyPriceInput =
-            customerElement.querySelector(
-                ".hour-price"
-            );
-
-        const startButton =
-            customerElement.querySelector(
-                ".start"
-            );
-
-        const stopButton =
-            customerElement.querySelector(
-                ".stop"
-            );
-
-        const orderNameInput =
-            customerElement.querySelector(
-                ".order-name"
-            );
-
-        const orderPriceInput =
-            customerElement.querySelector(
-                ".order-price"
-            );
-
-        const addOrderButton =
-            customerElement.querySelector(
-                ".add-order-btn"
-            );
-
-        const ordersList =
-            customerElement.querySelector(
-                ".orders-list"
-            );
-
-        const summaryGame =
-            customerElement.querySelector(
-                ".summary-game"
-            );
-
-        const summaryOrders =
-            customerElement.querySelector(
-                ".summary-orders"
-            );
-
-        const summaryTotal =
-            customerElement.querySelector(
-                ".summary-total"
-            );
-
-        const checkoutButton =
-            customerElement.querySelector(
-                ".checkout"
-            );
-
-
-        nameElement.textContent =
-            customer.name;
-
-        hourlyPriceInput.value =
-            customer.hourlyPrice;
-
-
-        function updateDisplay() {
-
-            const seconds =
-                getElapsedSeconds(customer);
-
-            const gameCost =
-                getGameCost(customer);
-
-            const ordersCost =
-                getOrdersCost(customer);
-
-            const total =
-                gameCost + ordersCost;
-
-
-            timerElement.textContent =
-                formatTime(seconds);
-
-
-            gameCostElement.textContent =
-                "עלות משחק: " +
-                gameCost.toFixed(2) +
-                " ₪";
-
-
-            summaryGame.textContent =
-                gameCost.toFixed(2) +
-                " ₪";
-
-
-            summaryOrders.textContent =
-                ordersCost.toFixed(2) +
-                " ₪";
-
-
-            summaryTotal.textContent =
-                total.toFixed(2) +
-                " ₪";
-
-
-            if (customer.running) {
-
-                statusElement.textContent =
-                    "● הזמן פועל";
-
-                statusElement.classList.add(
-                    "running"
-                );
-
-                startButton.disabled = true;
-                stopButton.disabled = false;
-
-            } else {
-
-                statusElement.classList.remove(
-                    "running"
-                );
-
-                if (
-                    customer.elapsedSeconds > 0
-                ) {
-
-                    statusElement.textContent =
-                        "● הזמן נעצר";
-
-                } else {
-
-                    statusElement.textContent =
-                        "● הזמן לא התחיל";
-
-                }
-
-                startButton.disabled = false;
-                stopButton.disabled = true;
-            }
-        }
-
-
-        function renderOrders() {
-
-            ordersList.innerHTML = "";
-
-
-            if (customer.orders.length === 0) {
-
-                const empty =
-                    document.createElement("div");
-
-                empty.style.color =
-                    "#9ca3af";
-
-                empty.style.marginBottom =
-                    "15px";
-
-                empty.textContent =
-                    "אין הזמנות עדיין";
-
-                ordersList.appendChild(empty);
-
-                return;
-            }
-
-
-            customer.orders.forEach(
-                function(order, index) {
-
-                    const item =
-                        document.createElement("div");
-
-                    item.className =
-                        "order-item";
-
-
-                    const text =
-                        document.createElement("span");
-
-                    text.textContent =
-                        order.name +
-                        " — " +
-                        order.price.toFixed(2) +
-                        " ₪";
-
-
-                    const removeButton =
-                        document.createElement("button");
-
-                    removeButton.className =
-                        "remove-order";
-
-                    removeButton.textContent =
-                        "מחק";
-
-
-                    removeButton.addEventListener(
-                        "click",
-                        function() {
-
-                            customer.orders.splice(
-                                index,
-                                1
-                            );
-
-                            saveCustomers();
-
-                            renderOrders();
-
-                            updateDisplay();
-                        }
+            const nameElement =
+                customerElement
+                    .querySelector(
+                        ".customer-name"
                     );
 
 
-                    item.appendChild(text);
-
-                    item.appendChild(
-                        removeButton
-                    );
-
-                    ordersList.appendChild(item);
-                }
-            );
-        }
-
-
-        header.addEventListener(
-            "click",
-            function() {
-
-                customer.open =
-                    !customer.open;
-
-                saveCustomers();
-
-                renderCustomers();
-            }
-        );
-
-
-        startButton.addEventListener(
-            "click",
-            function() {
-
-                if (customer.running) {
-                    return;
-                }
-
-
-                customer.running = true;
-
-                customer.startedAt =
-                    Date.now();
-
-
-                saveCustomers();
-
-                updateDisplay();
-            }
-        );
-
-
-        stopButton.addEventListener(
-            "click",
-            function() {
-
-                if (!customer.running) {
-                    return;
-                }
-
-
-                const extraSeconds =
-                    Math.floor(
-                        (
-                            Date.now() -
-                            customer.startedAt
-                        ) / 1000
+            const statusElement =
+                customerElement
+                    .querySelector(
+                        ".status"
                     );
 
 
-                customer.elapsedSeconds +=
-                    extraSeconds;
-
-
-                customer.running = false;
-
-                customer.startedAt = null;
-
-
-                saveCustomers();
-
-                updateDisplay();
-            }
-        );
-
-
-        hourlyPriceInput.addEventListener(
-            "input",
-            function() {
-
-                const newPrice =
-                    Number(
-                        hourlyPriceInput.value
+            const header =
+                customerElement
+                    .querySelector(
+                        ".customer-header"
                     );
 
 
-                if (
-                    Number.isFinite(newPrice) &&
-                    newPrice >= 0
-                ) {
-
-                    customer.hourlyPrice =
-                        newPrice;
-
-                    saveCustomers();
-
-                    updateDisplay();
-                }
-            }
-        );
-
-
-        function addOrder() {
-
-            const orderName =
-                orderNameInput.value.trim();
-
-            const orderPrice =
-                Number(
-                    orderPriceInput.value
-                );
-
-
-            if (!orderName) {
-
-                alert(
-                    "יש להזין שם מוצר"
-                );
-
-                return;
-            }
-
-
-            if (
-                !Number.isFinite(orderPrice) ||
-                orderPrice < 0
-            ) {
-
-                alert(
-                    "יש להזין מחיר תקין"
-                );
-
-                return;
-            }
-
-
-            customer.orders.push({
-
-                name: orderName,
-
-                price: orderPrice
-
-            });
-
-
-            saveCustomers();
-
-
-            orderNameInput.value = "";
-
-            orderPriceInput.value = "";
-
-
-            renderOrders();
-
-            updateDisplay();
-
-            orderNameInput.focus();
-        }
-
-
-        addOrderButton.addEventListener(
-            "click",
-            addOrder
-        );
-
-
-        orderPriceInput.addEventListener(
-            "keydown",
-            function(event) {
-
-                if (event.key === "Enter") {
-                    addOrder();
-                }
-            }
-        );
-
-
-        checkoutButton.addEventListener(
-            "click",
-            function() {
-
-                const gameCost =
-                    getGameCost(customer);
-
-                const ordersCost =
-                    getOrdersCost(customer);
-
-                const finalTotal =
-                    gameCost + ordersCost;
-
-
-                const confirmed =
-                    confirm(
-
-                        "לסגור את החשבון של " +
-                        customer.name +
-                        "?\n\n" +
-
-                        "זמן משחק: " +
-                        gameCost.toFixed(2) +
-                        " ₪\n" +
-
-                        "הזמנות: " +
-                        ordersCost.toFixed(2) +
-                        " ₪\n\n" +
-
-                        'סה"כ: ' +
-                        finalTotal.toFixed(2) +
-                        " ₪"
-                    );
-
-
-                if (!confirmed) {
-                    return;
-                }
-
-
-                customers =
-                    customers.filter(
-                        function(item) {
-
-                            return (
-                                item.id !==
-                                customer.id
-                            );
-                        }
-                    );
-
-
-                saveCustomers();
-
-                renderCustomers();
-            }
-        );
-
-
-        renderOrders();
-
-        updateDisplay();
-
-        customersList.appendChild(
-            customerElement
-        );
-    });
-}
-
-
-addCustomerBtn.addEventListener(
-    "click",
-    addCustomer
-);
-
-
-customerNameInput.addEventListener(
-    "keydown",
-    function(event) {
-
-        if (event.key === "Enter") {
-            addCustomer();
-        }
-    }
-);
-
-
-/*
-    מרענן את התצוגה כל שנייה.
-    הזמן עצמו מחושב לפי השעון האמיתי,
-    ולכן סגירת האתר לא עוצרת אותו.
-*/
-setInterval(
-    function() {
-
-        const customerElements =
-            customersList.querySelectorAll(
-                ".customer"
-            );
-
-
-        customerElements.forEach(
-            function(element, index) {
-
-                const customer =
-                    customers[index];
-
-                if (
-                    !customer ||
-                    !customer.running
-                ) {
-                    return;
-                }
-
-
-                const timer =
-                    element.querySelector(
+            const timerElement =
+                customerElement
+                    .querySelector(
                         ".timer"
                     );
 
-                const gameCostElement =
-                    element.querySelector(
+
+            const gameCostElement =
+                customerElement
+                    .querySelector(
                         ".game-cost"
                     );
 
-                const summaryGame =
-                    element.querySelector(
+
+            const hourlyPriceInput =
+                customerElement
+                    .querySelector(
+                        ".hour-price"
+                    );
+
+
+            const startButton =
+                customerElement
+                    .querySelector(
+                        ".start"
+                    );
+
+
+            const stopButton =
+                customerElement
+                    .querySelector(
+                        ".stop"
+                    );
+
+
+            const orderNameInput =
+                customerElement
+                    .querySelector(
+                        ".order-name"
+                    );
+
+
+            const orderPriceInput =
+                customerElement
+                    .querySelector(
+                        ".order-price"
+                    );
+
+
+            const addOrderButton =
+                customerElement
+                    .querySelector(
+                        ".add-order-btn"
+                    );
+
+
+            const ordersList =
+                customerElement
+                    .querySelector(
+                        ".orders-list"
+                    );
+
+
+            const summaryGame =
+                customerElement
+                    .querySelector(
                         ".summary-game"
                     );
 
-                const summaryOrders =
-                    element.querySelector(
+
+            const summaryOrders =
+                customerElement
+                    .querySelector(
                         ".summary-orders"
                     );
 
-                const summaryTotal =
-                    element.querySelector(
+
+            const summaryTotal =
+                customerElement
+                    .querySelector(
                         ".summary-total"
                     );
 
 
+            const checkoutButton =
+                customerElement
+                    .querySelector(
+                        ".checkout"
+                    );
+
+
+            nameElement.textContent =
+                customer.name;
+
+
+            hourlyPriceInput.value =
+                customer.hourlyPrice;
+
+
+            /* =========================
+               UPDATE DISPLAY
+            ========================= */
+
+            function updateDisplay() {
+
                 const seconds =
-                    getElapsedSeconds(customer);
+                    getElapsedSeconds(
+                        customer
+                    );
+
 
                 const gameCost =
-                    getGameCost(customer);
+                    getGameCost(
+                        customer
+                    );
+
 
                 const ordersCost =
-                    getOrdersCost(customer);
+                    getOrdersCost(
+                        customer
+                    );
+
 
                 const total =
-                    gameCost + ordersCost;
+                    gameCost +
+                    ordersCost;
 
 
-                timer.textContent =
-                    formatTime(seconds);
+                timerElement.textContent =
+                    formatTime(
+                        seconds
+                    );
 
 
                 gameCostElement.textContent =
@@ -1321,15 +1266,972 @@ setInterval(
                 summaryTotal.textContent =
                     total.toFixed(2) +
                     " ₪";
+
+
+                if (customer.running) {
+
+                    statusElement.textContent =
+                        "● הזמן פועל";
+
+
+                    statusElement
+                        .classList
+                        .add("running");
+
+
+                    startButton.disabled =
+                        true;
+
+
+                    stopButton.disabled =
+                        false;
+
+                } else {
+
+                    statusElement
+                        .classList
+                        .remove("running");
+
+
+                    if (
+                        customer.elapsedSeconds > 0
+                    ) {
+
+                        statusElement.textContent =
+                            "● הזמן נעצר";
+
+                    } else {
+
+                        statusElement.textContent =
+                            "● הזמן לא התחיל";
+
+                    }
+
+
+                    startButton.disabled =
+                        false;
+
+
+                    stopButton.disabled =
+                        true;
+
+                }
+
+            }
+
+
+            /* =========================
+               ORDERS
+            ========================= */
+
+            function renderOrders() {
+
+                ordersList.innerHTML =
+                    "";
+
+
+                if (
+                    customer.orders.length === 0
+                ) {
+
+                    const empty =
+                        document.createElement(
+                            "div"
+                        );
+
+
+                    empty.style.color =
+                        "#9ca3af";
+
+
+                    empty.style.marginBottom =
+                        "15px";
+
+
+                    empty.textContent =
+                        "אין הזמנות עדיין";
+
+
+                    ordersList.appendChild(
+                        empty
+                    );
+
+
+                    return;
+                }
+
+
+                customer.orders.forEach(
+
+                    function(order) {
+
+                        const item =
+                            document.createElement(
+                                "div"
+                            );
+
+
+                        item.className =
+                            "order-item";
+
+
+                        const text =
+                            document.createElement(
+                                "span"
+                            );
+
+
+                        text.textContent =
+                            order.name +
+                            " — " +
+                            Number(
+                                order.price
+                            ).toFixed(2) +
+                            " ₪";
+
+
+                        const removeButton =
+                            document.createElement(
+                                "button"
+                            );
+
+
+                        removeButton.className =
+                            "remove-order";
+
+
+                        removeButton.textContent =
+                            "מחק";
+
+
+                        removeButton
+                            .addEventListener(
+
+                                "click",
+
+                                async function() {
+
+                                    removeButton.disabled =
+                                        true;
+
+
+                                    const { error } =
+                                        await db
+
+                                            .from(
+                                                "orders"
+                                            )
+
+                                            .delete()
+
+                                            .eq(
+                                                "id",
+                                                order.id
+                                            );
+
+
+                                    if (error) {
+
+                                        console.error(
+                                            "Delete order error:",
+                                            error
+                                        );
+
+
+                                        alert(
+                                            "שגיאה במחיקת ההזמנה"
+                                        );
+
+
+                                        removeButton.disabled =
+                                            false;
+
+
+                                        return;
+                                    }
+
+
+                                    customer.orders =
+                                        customer.orders.filter(
+
+                                            function(item) {
+
+                                                return (
+                                                    item.id !==
+                                                    order.id
+                                                );
+
+                                            }
+                                        );
+
+
+                                    renderOrders();
+
+                                    updateDisplay();
+
+                                }
+                            );
+
+
+                        item.appendChild(
+                            text
+                        );
+
+
+                        item.appendChild(
+                            removeButton
+                        );
+
+
+                        ordersList.appendChild(
+                            item
+                        );
+
+                    }
+                );
+
+            }
+
+
+            /* =========================
+               OPEN / CLOSE CARD
+            ========================= */
+
+            header.addEventListener(
+
+                "click",
+
+                function() {
+
+                    customer.open =
+                        !customer.open;
+
+
+                    renderCustomers();
+
+                }
+            );
+
+
+            /* =========================
+               START TIMER
+            ========================= */
+
+            startButton.addEventListener(
+
+                "click",
+
+                async function() {
+
+                    if (
+                        customer.running
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    customer.running =
+                        true;
+
+
+                    customer.startedAt =
+                        Date.now();
+
+
+                    updateDisplay();
+
+
+                    const ok =
+                        await saveCustomer(
+                            customer
+                        );
+
+
+                    if (!ok) {
+
+                        customer.running =
+                            false;
+
+
+                        customer.startedAt =
+                            null;
+
+
+                        updateDisplay();
+
+                    }
+
+                }
+            );
+
+
+            /* =========================
+               STOP TIMER
+            ========================= */
+
+            stopButton.addEventListener(
+
+                "click",
+
+                async function() {
+
+                    if (
+                        !customer.running
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    const oldElapsed =
+                        customer.elapsedSeconds;
+
+
+                    const oldStartedAt =
+                        customer.startedAt;
+
+
+                    const extraSeconds =
+                        Math.floor(
+
+                            (
+                                Date.now() -
+                                customer.startedAt
+                            ) / 1000
+
+                        );
+
+
+                    customer.elapsedSeconds +=
+                        extraSeconds;
+
+
+                    customer.running =
+                        false;
+
+
+                    customer.startedAt =
+                        null;
+
+
+                    updateDisplay();
+
+
+                    const ok =
+                        await saveCustomer(
+                            customer
+                        );
+
+
+                    if (!ok) {
+
+                        customer.elapsedSeconds =
+                            oldElapsed;
+
+
+                        customer.running =
+                            true;
+
+
+                        customer.startedAt =
+                            oldStartedAt;
+
+
+                        updateDisplay();
+
+                    }
+
+                }
+            );
+
+
+            /* =========================
+               HOURLY PRICE
+            ========================= */
+
+            hourlyPriceInput
+                .addEventListener(
+
+                    "change",
+
+                    async function() {
+
+                        const newPrice =
+                            Number(
+                                hourlyPriceInput.value
+                            );
+
+
+                        if (
+                            !Number.isFinite(
+                                newPrice
+                            ) ||
+                            newPrice < 0
+                        ) {
+
+                            hourlyPriceInput.value =
+                                customer.hourlyPrice;
+
+
+                            return;
+                        }
+
+
+                        const oldPrice =
+                            customer.hourlyPrice;
+
+
+                        customer.hourlyPrice =
+                            newPrice;
+
+
+                        updateDisplay();
+
+
+                        const ok =
+                            await saveCustomer(
+                                customer
+                            );
+
+
+                        if (!ok) {
+
+                            customer.hourlyPrice =
+                                oldPrice;
+
+
+                            hourlyPriceInput.value =
+                                oldPrice;
+
+
+                            updateDisplay();
+
+                        }
+
+                    }
+                );
+
+
+            /* =========================
+               ADD ORDER
+            ========================= */
+
+            async function addOrder() {
+
+                const orderName =
+                    orderNameInput
+                        .value
+                        .trim();
+
+
+                const orderPrice =
+                    Number(
+                        orderPriceInput.value
+                    );
+
+
+                if (!orderName) {
+
+                    alert(
+                        "יש להזין שם מוצר"
+                    );
+
+                    return;
+                }
+
+
+                if (
+                    !Number.isFinite(
+                        orderPrice
+                    ) ||
+                    orderPrice < 0
+                ) {
+
+                    alert(
+                        "יש להזין מחיר תקין"
+                    );
+
+                    return;
+                }
+
+
+                addOrderButton.disabled =
+                    true;
+
+
+                const { data, error } =
+                    await db
+
+                        .from("orders")
+
+                        .insert({
+
+                            session_id:
+                                customer.id,
+
+                            product_name:
+                                orderName,
+
+                            price:
+                                orderPrice
+
+                        })
+
+                        .select()
+
+                        .single();
+
+
+                addOrderButton.disabled =
+                    false;
+
+
+                if (error) {
+
+                    console.error(
+                        "Add order error:",
+                        error
+                    );
+
+
+                    alert(
+                        "שגיאה בהוספת ההזמנה"
+                    );
+
+
+                    return;
+                }
+
+
+                customer.orders.push({
+
+                    id:
+                        data.id,
+
+                    name:
+                        data.product_name,
+
+                    price:
+                        Number(
+                            data.price
+                        )
+
+                });
+
+
+                orderNameInput.value =
+                    "";
+
+
+                orderPriceInput.value =
+                    "";
+
+
+                renderOrders();
+
+                updateDisplay();
+
+
+                orderNameInput.focus();
+
+            }
+
+
+            addOrderButton
+                .addEventListener(
+                    "click",
+                    addOrder
+                );
+
+
+            orderPriceInput
+                .addEventListener(
+
+                    "keydown",
+
+                    function(event) {
+
+                        if (
+                            event.key ===
+                            "Enter"
+                        ) {
+
+                            addOrder();
+
+                        }
+
+                    }
+                );
+
+
+            /* =========================
+               CHECKOUT
+            ========================= */
+
+            checkoutButton
+                .addEventListener(
+
+                    "click",
+
+                    async function() {
+
+                        const elapsedSeconds =
+                            getElapsedSeconds(
+                                customer
+                            );
+
+
+                        const gameCost =
+                            getGameCost(
+                                customer
+                            );
+
+
+                        const ordersCost =
+                            getOrdersCost(
+                                customer
+                            );
+
+
+                        const finalTotal =
+                            gameCost +
+                            ordersCost;
+
+
+                        const confirmed =
+                            confirm(
+
+                                "לסגור את החשבון של " +
+                                customer.name +
+                                "?\n\n" +
+
+                                "זמן משחק: " +
+                                gameCost.toFixed(2) +
+                                " ₪\n" +
+
+                                "הזמנות: " +
+                                ordersCost.toFixed(2) +
+                                " ₪\n\n" +
+
+                                'סה"כ: ' +
+                                finalTotal.toFixed(2) +
+                                " ₪"
+
+                            );
+
+
+                        if (!confirmed) {
+
+                            return;
+
+                        }
+
+
+                        checkoutButton.disabled =
+                            true;
+
+
+                        checkoutButton.textContent =
+                            "שומר...";
+
+
+                        const {
+                            error: saleError
+                        } =
+                            await db
+
+                                .from("sales")
+
+                                .insert({
+
+                                    customer_name:
+                                        customer.name,
+
+                                    hourly_price:
+                                        Number(
+                                            customer.hourlyPrice || 0
+                                        ),
+
+                                    elapsed_seconds:
+                                        elapsedSeconds,
+
+                                    game_cost:
+                                        Number(
+                                            gameCost.toFixed(2)
+                                        ),
+
+                                    orders_cost:
+                                        Number(
+                                            ordersCost.toFixed(2)
+                                        ),
+
+                                    total_amount:
+                                        Number(
+                                            finalTotal.toFixed(2)
+                                        ),
+
+                                    closed_at:
+                                        new Date()
+                                            .toISOString()
+
+                                });
+
+
+                        if (saleError) {
+
+                            console.error(
+                                "Save sale error:",
+                                saleError
+                            );
+
+
+                            alert(
+                                "שגיאה בשמירת החשבון. הלקוח לא נמחק."
+                            );
+
+
+                            checkoutButton.disabled =
+                                false;
+
+
+                            checkoutButton.textContent =
+                                "✓ סגור חשבון";
+
+
+                            return;
+                        }
+
+
+                        const {
+                            error: deleteError
+                        } =
+                            await db
+
+                                .from(
+                                    "active_sessions"
+                                )
+
+                                .delete()
+
+                                .eq(
+                                    "id",
+                                    customer.id
+                                );
+
+
+                        if (deleteError) {
+
+                            console.error(
+                                "Delete session error:",
+                                deleteError
+                            );
+
+
+                            alert(
+                                "החשבון נשמר, אבל הייתה שגיאה בהסרת הלקוח הפעיל."
+                            );
+
+
+                            checkoutButton.disabled =
+                                false;
+
+
+                            checkoutButton.textContent =
+                                "✓ סגור חשבון";
+
+
+                            return;
+                        }
+
+
+                        customers =
+                            customers.filter(
+
+                                function(item) {
+
+                                    return (
+                                        item.id !==
+                                        customer.id
+                                    );
+
+                                }
+                            );
+
+
+                        renderCustomers();
+
+                    }
+                );
+
+
+            renderOrders();
+
+            updateDisplay();
+
+
+            customersList.appendChild(
+                customerElement
+            );
+
+        }
+    );
+
+}
+
+
+/* =========================
+   ADD CUSTOMER EVENTS
+========================= */
+
+addCustomerBtn.addEventListener(
+    "click",
+    addCustomer
+);
+
+
+customerNameInput.addEventListener(
+
+    "keydown",
+
+    function(event) {
+
+        if (
+            event.key === "Enter"
+        ) {
+
+            addCustomer();
+
+        }
+
+    }
+);
+
+
+/* =========================
+   LIVE TIMER REFRESH
+========================= */
+
+setInterval(
+
+    function() {
+
+        const customerElements =
+            customersList
+                .querySelectorAll(
+                    ".customer"
+                );
+
+
+        customerElements.forEach(
+
+            function(
+                element,
+                index
+            ) {
+
+                const customer =
+                    customers[index];
+
+
+                if (
+                    !customer ||
+                    !customer.running
+                ) {
+
+                    return;
+
+                }
+
+
+                const timer =
+                    element.querySelector(
+                        ".timer"
+                    );
+
+
+                const gameCostElement =
+                    element.querySelector(
+                        ".game-cost"
+                    );
+
+
+                const summaryGame =
+                    element.querySelector(
+                        ".summary-game"
+                    );
+
+
+                const summaryOrders =
+                    element.querySelector(
+                        ".summary-orders"
+                    );
+
+
+                const summaryTotal =
+                    element.querySelector(
+                        ".summary-total"
+                    );
+
+
+                const seconds =
+                    getElapsedSeconds(
+                        customer
+                    );
+
+
+                const gameCost =
+                    getGameCost(
+                        customer
+                    );
+
+
+                const ordersCost =
+                    getOrdersCost(
+                        customer
+                    );
+
+
+                const total =
+                    gameCost +
+                    ordersCost;
+
+
+                timer.textContent =
+                    formatTime(
+                        seconds
+                    );
+
+
+                gameCostElement.textContent =
+                    "עלות משחק: " +
+                    gameCost.toFixed(2) +
+                    " ₪";
+
+
+                summaryGame.textContent =
+                    gameCost.toFixed(2) +
+                    " ₪";
+
+
+                summaryOrders.textContent =
+                    ordersCost.toFixed(2) +
+                    " ₪";
+
+
+                summaryTotal.textContent =
+                    total.toFixed(2) +
+                    " ₪";
+
             }
         );
 
     },
+
     1000
 );
-
-
-renderCustomers();
 
 </script>
 </body>
