@@ -93,6 +93,11 @@
         .status {
             color: #4ade80;
             font-size: 14px;
+            margin-top: 3px;
+        }
+
+        .arrow {
+            font-size: 18px;
         }
 
         .customer-details {
@@ -142,6 +147,22 @@
             background: #dc2626;
             color: white;
         }
+
+        .empty-message {
+            color: #9ca3af;
+            text-align: center;
+            padding: 25px;
+        }
+
+        @media (max-width: 600px) {
+            .add-customer {
+                flex-direction: column;
+            }
+
+            .buttons {
+                flex-direction: column;
+            }
+        }
     </style>
 </head>
 
@@ -155,52 +176,142 @@
 <div class="container">
 
     <div class="add-customer">
-        <input type="text" placeholder="שם הלקוח">
-        <button>+ הוסף לקוח</button>
+        <input
+            type="text"
+            id="customerName"
+            placeholder="שם הלקוח"
+            autocomplete="off"
+        >
+
+        <button id="addCustomerBtn">
+            + הוסף לקוח
+        </button>
     </div>
 
     <h2 class="section-title">לקוחות פעילים</h2>
 
-    <div class="customer">
-
-        <div class="customer-header">
-            <div>
-                <div class="customer-name">אחמד</div>
-                <div class="status">● פעיל</div>
-            </div>
-
-            <div>▼</div>
-        </div>
-
-        <div class="customer-details">
-
-            <div class="info-row">
-                <span>מחיר לשעה</span>
-                <strong>40 ₪</strong>
-            </div>
-
-            <div class="timer">
-                00:00:00
-            </div>
-
-            <div class="buttons">
-                <button class="start">▶ התחל זמן</button>
-                <button class="stop">■ עצור</button>
-            </div>
-
-        </div>
-
-    </div>
+    <div id="customersList"></div>
 
 </div>
 
 <script>
-    const customer = document.querySelector(".customer");
-    const customerHeader = document.querySelector(".customer-header");
 
-    customerHeader.addEventListener("click", function () {
-        customer.classList.toggle("open");
-    });
+    const customerNameInput =
+        document.getElementById("customerName");
+
+    const addCustomerBtn =
+        document.getElementById("addCustomerBtn");
+
+    const customersList =
+        document.getElementById("customersList");
+
+
+    function addCustomer() {
+
+        const customerName =
+            customerNameInput.value.trim();
+
+        if (customerName === "") {
+            alert("יש להזין שם לקוח");
+            return;
+        }
+
+
+        const customer = document.createElement("div");
+
+        customer.className = "customer";
+
+
+        customer.innerHTML = `
+            <div class="customer-header">
+
+                <div>
+                    <div class="customer-name"></div>
+                    <div class="status">● פעיל</div>
+                </div>
+
+                <div class="arrow">▼</div>
+
+            </div>
+
+
+            <div class="customer-details">
+
+                <div class="info-row">
+                    <span>מחיר לשעה</span>
+                    <strong>40 ₪</strong>
+                </div>
+
+                <div class="timer">
+                    00:00:00
+                </div>
+
+                <div class="buttons">
+
+                    <button class="start">
+                        ▶ התחל זמן
+                    </button>
+
+                    <button class="stop">
+                        ■ עצור
+                    </button>
+
+                </div>
+
+            </div>
+        `;
+
+
+        customer.querySelector(".customer-name")
+            .textContent = customerName;
+
+
+        const customerHeader =
+            customer.querySelector(".customer-header");
+
+        const arrow =
+            customer.querySelector(".arrow");
+
+
+        customerHeader.addEventListener("click", function () {
+
+            customer.classList.toggle("open");
+
+            if (customer.classList.contains("open")) {
+                arrow.textContent = "▲";
+            } else {
+                arrow.textContent = "▼";
+            }
+
+        });
+
+
+        customersList.appendChild(customer);
+
+
+        customerNameInput.value = "";
+
+        customerNameInput.focus();
+    }
+
+
+    addCustomerBtn.addEventListener(
+        "click",
+        addCustomer
+    );
+
+
+    customerNameInput.addEventListener(
+        "keydown",
+        function(event) {
+
+            if (event.key === "Enter") {
+                addCustomer();
+            }
+
+        }
+    );
+
 </script>
 
 </body>
