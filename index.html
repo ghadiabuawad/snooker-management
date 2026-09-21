@@ -2760,7 +2760,86 @@ async function loadSalesHistory() {
     salesHistoryBtn.textContent =
         "✖ סגור היסטוריה";
 }
+/* =========================
+   LOGOUT
+========================= */
 
+const logoutBtn =
+    document.getElementById("logoutBtn");
+
+
+logoutBtn.addEventListener(
+    "click",
+    async function() {
+
+        const confirmed =
+            confirm("האם אתה בטוח שברצונך להתנתק?");
+
+        if (!confirmed) {
+            return;
+        }
+
+
+        logoutBtn.disabled = true;
+
+        logoutBtn.textContent =
+            "מתנתק...";
+
+
+        const { error } =
+            await db.auth.signOut();
+
+
+        if (error) {
+
+            console.error(
+                "Logout error:",
+                error
+            );
+
+            alert(
+                "שגיאה בהתנתקות"
+            );
+
+            logoutBtn.disabled = false;
+
+            logoutBtn.textContent =
+                "🚪 התנתק";
+
+            return;
+        }
+
+
+        customers = [];
+
+        customersList.innerHTML = "";
+
+        salesHistory.innerHTML = "";
+
+        salesHistory.style.display =
+            "none";
+
+
+        adminPassword.value = "";
+
+        loginError.style.display =
+            "none";
+
+
+        app.style.display =
+            "none";
+
+        loginScreen.style.display =
+            "flex";
+
+
+        logoutBtn.disabled = false;
+
+        logoutBtn.textContent =
+            "🚪 התנתק";
+
+    }
+);
 </script>
 </body>
 </html>
