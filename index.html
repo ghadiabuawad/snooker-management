@@ -2854,6 +2854,212 @@ logoutBtn.addEventListener(
 
     }
 );
+    /* =========================
+   CLOSE ALL ACCOUNTS
+========================= */
+
+const closeAllBtn =
+    document.getElementById("closeAllBtn");
+
+closeAllBtn.addEventListener(
+    "click",
+    async function() {
+
+        if (customers.length === 0) {
+            alert("אין חשבונות פתוחים");
+            return;
+        }
+
+        const password =
+            prompt("🔐 הזן את סיסמת המערכת:");
+
+        if (!password) {
+            return;
+        }
+
+        /* בדיקת הסיסמה */
+        const { error: passwordError } =
+            await db.auth.signInWithPassword({
+                email: ADMIN_EMAIL,
+                password: password
+            });
+
+        if (passwordError) {
+            alert("❌ סיסמה שגויה");
+            return;
+        }
+
+        const confirmed =
+            confirm(
+                "⚠️ יש " +
+                customers.length +
+                " חשבונות פתוחים.\n\n" +
+                "האם לסגור את כולם?"
+            );
+
+        if (!confirmed) {
+            return;
+        }
+
+        closeAllBtn.disabled = true;
+        closeAllBtn.textContent =
+            "סוגר חשבונות...";
+
+        let closedCount = 0;
+        let totalClosed = 0;
+        let failedCount = 0;
+
+        /*
+         * עובדים על עותק כדי שלא נשנה
+         * את המערך בזמן הלולאה.
+         */
+        const customersToClose =
+            [...customers];
+
+        for (const customer of customersToClose) {
+
+            const elapsedSeconds =
+                getElapsedSeconds(customer);
+
+            const gameCost =
+                getGameCost(customer);
+
+            const ordersCost =
+                getOrdersCost(customer);
+
+            const finalTotal =
+                gameCost + ordersCost;
+
+
+            /* שמירה ב-sales */
+            const { error: saleError } =
+                await db
+                    .from("sales")
+                    .insert({
+
+                        customer_name:
+                            customer.name,
+
+                        hourly_price:
+                            Number(
+                                customer.hourlyPrice || 0
+                            ),
+
+                        elapsed_seconds:
+                            elapsedSeconds,
+
+                        game_cost:
+                            Number(
+                                gameCost.toFixed(2)
+                            ),
+
+                        orders_cost:
+                            Number(
+                                ordersCost.toFixed(2)
+                            ),
+
+                        total_amount:
+                            Number(
+                                finalTotal.toFixed(2)
+                            ),
+
+                        closed_at:
+                            new Date().toISOString()
+
+                    });
+
+
+            /*
+             * אם השמירה נכשלה —
+             * לא מוחקים את הלקוח.
+             */
+            if (saleError) {
+
+                console.error(
+                    "Close all - sale error:",
+                    customer.name,
+                    saleError
+                );
+
+                failedCount++;
+
+                continue;
+            }
+
+
+            /* מחיקת החשבון הפעיל */
+            const { error: deleteError } =
+                await db
+                    .from("active_sessions")
+                    .delete()
+                    .eq(
+                        "id",
+                        customer.id
+                    );
+
+
+            if (deleteError) {
+
+                console.error(
+                    "Close all - delete error:",
+                    customer.name,
+                    deleteError
+                );
+
+                failedCount++;
+
+                continue;
+            }
+
+
+            closedCount++;
+
+            totalClosed +=
+                finalTotal;
+
+
+            customers =
+                customers.filter(
+                    function(item) {
+                        return (
+                            item.id !==
+                            customer.id
+                        );
+                    }
+                );
+        }
+
+
+        renderCustomers();
+
+
+        closeAllBtn.disabled = false;
+
+        closeAllBtn.textContent =
+            "🔒 סגור את כל החשבונות";
+
+
+        let message =
+            "✅ נסגרו " +
+            closedCount +
+            " חשבונות.\n\n" +
+            'סה"כ: ' +
+            totalClosed.toFixed(2) +
+            " ₪";
+
+
+        if (failedCount > 0) {
+
+            message +=
+                "\n\n⚠️ " +
+                failedCount +
+                " חשבונות לא נסגרו בגלל שגיאה.";
+        }
+
+
+        alert(message);
+    }
+);
 </script>
 </body>
 </html>
