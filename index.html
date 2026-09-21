@@ -1,1 +1,207 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snooker Management</title>
 
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #111827;
+            color: white;
+            min-height: 100vh;
+        }
+
+        header {
+            background: #0b1220;
+            padding: 22px;
+            text-align: center;
+            border-bottom: 1px solid #263244;
+        }
+
+        header h1 {
+            font-size: 28px;
+        }
+
+        header p {
+            color: #9ca3af;
+            margin-top: 6px;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 800px;
+            margin: 35px auto;
+        }
+
+        .add-customer {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .add-customer input {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .add-customer button {
+            padding: 14px 22px;
+            border: none;
+            border-radius: 8px;
+            background: #16a34a;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .section-title {
+            margin-bottom: 15px;
+        }
+
+        .customer {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+
+        .customer-header {
+            padding: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .customer-name {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .status {
+            color: #4ade80;
+            font-size: 14px;
+        }
+
+        .customer-details {
+            display: none;
+            padding: 20px;
+            border-top: 1px solid #374151;
+            background: #18212f;
+        }
+
+        .customer.open .customer-details {
+            display: block;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .timer {
+            font-size: 30px;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .buttons button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 7px;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+        .start {
+            background: #16a34a;
+            color: white;
+        }
+
+        .stop {
+            background: #dc2626;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>🎱 Snooker Management</h1>
+    <p>מערכת ניהול לקוחות</p>
+</header>
+
+<div class="container">
+
+    <div class="add-customer">
+        <input type="text" placeholder="שם הלקוח">
+        <button>+ הוסף לקוח</button>
+    </div>
+
+    <h2 class="section-title">לקוחות פעילים</h2>
+
+    <div class="customer">
+
+        <div class="customer-header">
+            <div>
+                <div class="customer-name">אחמד</div>
+                <div class="status">● פעיל</div>
+            </div>
+
+            <div>▼</div>
+        </div>
+
+        <div class="customer-details">
+
+            <div class="info-row">
+                <span>מחיר לשעה</span>
+                <strong>40 ₪</strong>
+            </div>
+
+            <div class="timer">
+                00:00:00
+            </div>
+
+            <div class="buttons">
+                <button class="start">▶ התחל זמן</button>
+                <button class="stop">■ עצור</button>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+    const customer = document.querySelector(".customer");
+    const customerHeader = document.querySelector(".customer-header");
+
+    customerHeader.addEventListener("click", function () {
+        customer.classList.toggle("open");
+    });
+</script>
+
+</body>
+</html>
