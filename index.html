@@ -670,47 +670,63 @@ function renderGameTables() {
         tableElement.innerHTML = `
             <div class="customer-header">
 
-                <div>
+                <div style="width:100%;">
 
-                    <div class="customer-name">
+                    <div class="customer-name" style="text-align:center;">
                         <span class="ball-badge${table.running ? " spinning" : ""}" data-number="${table.table_number}"></span>
                     </div>
 
-                    <div class="table-header-players" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;"></div>
-
                     ${players.length > 0 ? `
-                    <div class="table-start-label"
-                        style="
-                            margin-top:18px;
-                            text-align:center;
-                            color:white;
-                            font-size:19px;
-                            font-weight:bold;
-                        "
-                    >
-                        🕐 שעת התחלה: ${startTimeText}
+                    <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:start;gap:10px;margin-top:16px;">
+                        <div class="table-players-left" style="display:flex;flex-direction:column;gap:8px;"></div>
+                        <div class="table-start-label"
+                            style="
+                                text-align:center;
+                                color:white;
+                                font-size:16px;
+                                font-weight:bold;
+                                white-space:nowrap;
+                                align-self:center;
+                            "
+                        >
+                            🕐<br>${startTimeText}
+                        </div>
+                        <div class="table-players-right" style="display:flex;flex-direction:column;gap:8px;"></div>
                     </div>
-                    ` : ""}
+                    ` : `
+                    <div class="table-header-players" style="text-align:center;color:#9ca3af;margin-top:10px;">אין שחקנים</div>
+                    `}
 
                 </div>
 
             </div>
         `;
 
-const headerPlayers = tableElement.querySelector(".table-header-players");
-if (players.length === 0) {
-    headerPlayers.textContent = "אין שחקנים";
-}
-players.forEach(function(player) {
-    const playerButton = document.createElement("button");
-    playerButton.type = "button";
-    playerButton.textContent = "👤 " + player.player_name;
-    playerButton.style.cssText = "padding:12px 18px;background:#2563eb;color:white;font-weight:bold;font-size:16px;max-width:100%;overflow-wrap:anywhere;";
-    playerButton.addEventListener("click", function(event) {
-        event.stopPropagation();
+if (players.length > 0) {
+    const half = Math.ceil(players.length / 2);
+    const leftPlayers = players.slice(0, half);
+    const rightPlayers = players.slice(half);
+    const leftContainer = tableElement.querySelector(".table-players-left");
+    const rightContainer = tableElement.querySelector(".table-players-right");
+
+    function buildPlayerButton(player) {
+        const playerButton = document.createElement("button");
+        playerButton.type = "button";
+        playerButton.textContent = "👤 " + player.player_name;
+        playerButton.style.cssText = "padding:12px 10px;background:#2563eb;color:white;font-weight:bold;font-size:15px;max-width:100%;overflow-wrap:anywhere;";
+        playerButton.addEventListener("click", function(event) {
+            event.stopPropagation();
+        });
+        return playerButton;
+    }
+
+    leftPlayers.forEach(function(player) {
+        leftContainer.appendChild(buildPlayerButton(player));
     });
-    headerPlayers.appendChild(playerButton);
-});
+    rightPlayers.forEach(function(player) {
+        rightContainer.appendChild(buildPlayerButton(player));
+    });
+}
 
 tableElement.addEventListener(
     "click",
@@ -804,7 +820,7 @@ function updateGameTableTimer() {
     tableTimerStatus.textContent = saving ? "שומר..." :
         state.running ? "● הזמן פועל" : "● הזמן נעצר";
     const startLabel = tableElement.querySelector(".table-start-label");
-    if (startLabel) startLabel.textContent = "🕐 שעת התחלה: " + (table.started_at ?
+    if (startLabel) startLabel.innerHTML = "🕐<br>" + (table.started_at ?
         new Date(table.started_at).toLocaleTimeString("he-IL", {
             hour: "2-digit", minute: "2-digit"
         }) : "--:--");
