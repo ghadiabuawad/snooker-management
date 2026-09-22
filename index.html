@@ -1449,7 +1449,7 @@ function openTabModal(name) {
             return;
         }
 
-        const confirmed = confirm(
+        const confirmed = await customConfirm(
             "לסגור את החשבון של " + name + " על סך " + total.toFixed(2) + " ₪?"
         );
         if (!confirmed) return;
