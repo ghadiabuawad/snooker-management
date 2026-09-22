@@ -795,7 +795,7 @@ updateGameTableTimer();
 
         if (saleError) {
             console.error("Table checkout - sale error:", saleError);
-            alert("שגיאה בשמירת החשבון. השולחן לא אופס.");
+            alert("שגיאה בשמירת החשבון. השולחן לא אופס: " + saleError.message);
             tableCheckoutButton.disabled = false;
             tableCheckoutButton.textContent = "✓ סגור חשבון";
             return;
