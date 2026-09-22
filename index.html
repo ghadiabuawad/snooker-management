@@ -910,7 +910,7 @@ updateGameTableTimer();
                 : false;
         }
 
-        const { error: saleError } = await db
+        const { data: insertedSales, error: saleError } = await db
             .from("sales")
             .insert(
                 payerNames.map(function(payerName) {
@@ -926,7 +926,8 @@ updateGameTableTimer();
                         closed_at: new Date().toISOString()
                     };
                 })
-            );
+            )
+            .select();
 
         if (saleError) {
             console.error("Table checkout - sale error:", saleError);
@@ -936,13 +937,33 @@ updateGameTableTimer();
             return;
         }
 
-        for (const payerName of payerNames) {
-            if (includeBarTab[payerName]) {
-                await db
-                    .from("tab_orders")
-                    .delete()
-                    .eq("tab_name", payerName);
+        for (let i = 0; i < payerNames.length; i++) {
+            const payerName = payerNames[i];
+            if (!includeBarTab[payerName]) continue;
+
+            const items = getTabOrdersForName(payerName);
+            if (items.length > 0) {
+                const { error: itemsError } = await db
+                    .from("sale_items")
+                    .insert(
+                        items.map(function(order) {
+                            return {
+                                sale_id: insertedSales[i].id,
+                                category: order.category,
+                                product_name: order.product_name,
+                                price: Number(order.price || 0)
+                            };
+                        })
+                    );
+                if (itemsError) {
+                    console.error("Save sale items error:", itemsError);
+                }
             }
+
+            await db
+                .from("tab_orders")
+                .delete()
+                .eq("tab_name", payerName);
         }
 
         tabOrders = tabOrders.filter(function(order) {
@@ -1527,7 +1548,7 @@ function openTabModal(name) {
         closeTabBtn.disabled = true;
         closeTabBtn.textContent = "סוגר חשבון...";
 
-        const { error: saleError } = await db
+        const { data: insertedSale, error: saleError } = await db
             .from("sales")
             .insert({
                 customer_name: name,
@@ -1537,7 +1558,9 @@ function openTabModal(name) {
                 orders_cost: Number(total.toFixed(2)),
                 total_amount: Number(total.toFixed(2)),
                 closed_at: new Date().toISOString()
-            });
+            })
+            .select()
+            .single();
 
         if (saleError) {
             console.error("Close tab error:", saleError);
@@ -1545,6 +1568,25 @@ function openTabModal(name) {
             closeTabBtn.disabled = false;
             closeTabBtn.textContent = "✓ סגור חשבון";
             return;
+        }
+
+        const items = getTabOrdersForName(name);
+        if (items.length > 0) {
+            const { error: itemsError } = await db
+                .from("sale_items")
+                .insert(
+                    items.map(function(order) {
+                        return {
+                            sale_id: insertedSale.id,
+                            category: order.category,
+                            product_name: order.product_name,
+                            price: Number(order.price || 0)
+                        };
+                    })
+                );
+            if (itemsError) {
+                console.error("Save sale items error:", itemsError);
+            }
         }
 
         const { error: deleteError } = await db
@@ -2226,7 +2268,7 @@ async function loadSalesHistory() {
     const { data, error } =
         await db
             .from("sales")
-            .select("*")
+            .select("*, sale_items(*)")
             .order(
                 "closed_at",
                 { ascending: false }
@@ -2592,6 +2634,49 @@ async function loadSalesHistory() {
             card.appendChild(
                 ordersRow
             );
+
+
+            /* פירוט מוצרים */
+
+            if (sale.sale_items && sale.sale_items.length > 0) {
+
+                const itemsGrouped = new Map();
+
+                sale.sale_items.forEach(function(item) {
+                    const key = item.product_name;
+                    if (!itemsGrouped.has(key)) {
+                        itemsGrouped.set(key, { name: item.product_name, qty: 0, total: 0 });
+                    }
+                    const entry = itemsGrouped.get(key);
+                    entry.qty += 1;
+                    entry.total += Number(item.price || 0);
+                });
+
+                const itemsBox = document.createElement("div");
+                itemsBox.style.cssText = `
+                    background:#111827;
+                    border-radius:7px;
+                    padding:10px 12px;
+                    margin-bottom:9px;
+                `;
+
+                Array.from(itemsGrouped.values()).forEach(function(entry) {
+                    const itemRow = document.createElement("div");
+                    itemRow.style.cssText = `
+                        display:flex;
+                        justify-content:space-between;
+                        font-size:13px;
+                        color:#9ca3af;
+                        padding:3px 0;
+                    `;
+                    itemRow.textContent =
+                        entry.name + (entry.qty > 1 ? " × " + entry.qty : "") +
+                        " — " + entry.total.toFixed(2) + " ₪";
+                    itemsBox.appendChild(itemRow);
+                });
+
+                card.appendChild(itemsBox);
+            }
 
 
             /* סה"כ */
