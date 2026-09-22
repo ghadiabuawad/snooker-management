@@ -412,6 +412,59 @@ async function changeTableTimer(table, action) {
     }
 }
 
+function customConfirm(message) {
+    return new Promise(function(resolve) {
+        const overlay = document.createElement("div");
+        overlay.style.cssText =
+            "position:fixed;inset:0;background:rgba(0,0,0,.7);" +
+            "display:flex;align-items:center;justify-content:center;" +
+            "z-index:2000;padding:20px;";
+
+        const box = document.createElement("div");
+        box.style.cssText =
+            "background:#1f2937;border:1px solid #374151;border-radius:12px;" +
+            "padding:24px;max-width:360px;width:100%;text-align:center;";
+
+        const text = document.createElement("div");
+        text.style.cssText =
+            "font-size:16px;margin-bottom:20px;white-space:pre-line;line-height:1.6;";
+        text.textContent = message;
+        box.appendChild(text);
+
+        const actions = document.createElement("div");
+        actions.style.cssText = "display:flex;gap:10px;";
+
+        function close(result) {
+            overlay.remove();
+            resolve(result);
+        }
+
+        const confirmBtn = document.createElement("button");
+        confirmBtn.type = "button";
+        confirmBtn.textContent = "✓ אישור";
+        confirmBtn.style.cssText =
+            "flex:1;padding:12px;background:#16a34a;color:white;font-weight:bold;";
+        confirmBtn.addEventListener("click", function() { close(true); });
+
+        const cancelBtn = document.createElement("button");
+        cancelBtn.type = "button";
+        cancelBtn.textContent = "ביטול";
+        cancelBtn.style.cssText = "flex:1;padding:12px;background:#4b5563;color:white;";
+        cancelBtn.addEventListener("click", function() { close(false); });
+
+        actions.appendChild(confirmBtn);
+        actions.appendChild(cancelBtn);
+        box.appendChild(actions);
+
+        overlay.appendChild(box);
+        overlay.addEventListener("click", function(event) {
+            if (event.target === overlay) close(false);
+        });
+
+        document.body.appendChild(overlay);
+    });
+}
+
 function askWhoPays(playerNames) {
     return new Promise(function(resolve) {
         const overlay = document.createElement("div");
@@ -776,16 +829,16 @@ updateGameTableTimer();
         const shareCost = gameCost / payerNames.length;
 
         const includeBarTab = {};
-        payerNames.forEach(function(payerName) {
+        for (const payerName of payerNames) {
             const barTotal = getTabTotal(payerName);
             includeBarTab[payerName] = barTotal > 0
-                ? confirm(
+                ? await customConfirm(
                     "ל" + payerName + " יש הזמנות פתוחות מהבר בסך " +
                     barTotal.toFixed(2) + " ₪.\n\n" +
                     "לסגור אותן ביחד עם חשבון השולחן?"
                 )
                 : false;
-        });
+        }
 
         const { error: saleError } = await db
             .from("sales")
