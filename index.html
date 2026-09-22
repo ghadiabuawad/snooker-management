@@ -625,6 +625,115 @@ tableElement.addEventListener(
         `;
 
         tableElement.appendChild(details);
+       const startTableGameButton =
+    details.querySelector(".start-table-game");
+
+startTableGameButton.addEventListener(
+    "click",
+    async function(event) {
+
+        event.stopPropagation();
+
+        const inputs =
+            details.querySelectorAll(
+                ".table-player-input"
+            );
+
+        const playerNames =
+            Array.from(inputs)
+                .map(function(input) {
+                    return input.value.trim();
+                })
+                .filter(function(name) {
+                    return name !== "";
+                });
+
+        if (playerNames.length === 0) {
+            alert("יש להזין לפחות שם של שחקן אחד");
+            return;
+        }
+
+        if (table.running) {
+            alert("השולחן כבר פעיל");
+            return;
+        }
+
+        startTableGameButton.disabled = true;
+        startTableGameButton.textContent = "מתחיל משחק...";
+
+        const now =
+            new Date().toISOString();
+
+        const { error: tableError } =
+            await db
+                .from("game_tables")
+                .update({
+                    running: true,
+                    started_at: now,
+                    elapsed_seconds: 0,
+                    updated_at: now
+                })
+                .eq("id", table.id);
+
+        if (tableError) {
+            console.error(
+                "Start table error:",
+                tableError
+            );
+
+            alert("שגיאה בהתחלת המשחק");
+
+            startTableGameButton.disabled = false;
+            startTableGameButton.textContent = "▶ התחל משחק";
+            return;
+        }
+
+        const playersToInsert =
+            playerNames.map(
+                function(name, index) {
+                    return {
+                        table_id: table.id,
+                        player_name: name,
+                        position: index + 1
+                    };
+                }
+            );
+
+        const { error: playersError } =
+            await db
+                .from("table_players")
+                .insert(playersToInsert);
+
+        if (playersError) {
+
+            console.error(
+                "Save players error:",
+                playersError
+            );
+
+            /* מחזירים את השולחן למצב לא פעיל */
+            await db
+                .from("game_tables")
+                .update({
+                    running: false,
+                    started_at: null,
+                    elapsed_seconds: 0,
+                    updated_at:
+                        new Date().toISOString()
+                })
+                .eq("id", table.id);
+
+            alert("שגיאה בשמירת השחקנים");
+
+            startTableGameButton.disabled = false;
+            startTableGameButton.textContent = "▶ התחל משחק";
+            return;
+        }
+
+        await loadGameTables();
+    }
+);
+        
     }
 );
          
