@@ -2394,353 +2394,108 @@ async function loadSalesHistory() {
 
 
     /* =========================
-       SALES
+       SALES TABLE
     ========================= */
 
-    data.forEach(
-        function(sale) {
-
-            const card =
-                document.createElement(
-                    "div"
-                );
-
-
-            card.style.cssText = `
-                background:#1f2937;
-                border:1px solid #374151;
-                border-radius:10px;
-                padding:18px;
-                margin-bottom:12px;
-            `;
-
-
-            const topRow =
-                document.createElement(
-                    "div"
-                );
-
-
-            topRow.style.cssText = `
-                display:flex;
-                justify-content:space-between;
-                align-items:center;
-                gap:15px;
-                margin-bottom:15px;
-            `;
-
-
-            const customerName =
-                document.createElement(
-                    "strong"
-                );
-
-
-            customerName.textContent =
-                sale.customer_name ||
-                "ללא שם";
-
-
-            const dateElement =
-                document.createElement(
-                    "span"
-                );
-
-
-            dateElement.style.cssText = `
-                color:#9ca3af;
-                font-size:13px;
-            `;
-
-
-            const date =
-                new Date(
-                    sale.closed_at ||
-                    sale.created_at
-                );
-
-
-            dateElement.textContent =
-                date.toLocaleString(
-                    "he-IL"
-                );
-
-
-            topRow.appendChild(
-                customerName
-            );
-
-
-            topRow.appendChild(
-                dateElement
-            );
-
-
-            card.appendChild(
-                topRow
-            );
-
-
-            /* זמן */
-
-            const timeRow =
-                document.createElement(
-                    "div"
-                );
-
-
-            timeRow.style.cssText = `
-                display:flex;
-                justify-content:space-between;
-                margin-bottom:9px;
-            `;
-
-
-            const timeLabel =
-                document.createElement(
-                    "span"
-                );
-
-            timeLabel.textContent =
-                "זמן משחק";
-
-
-            const timeValue =
-                document.createElement(
-                    "span"
-                );
-
-            timeValue.textContent =
-                formatTime(
-                    Number(
-                        sale.elapsed_seconds ||
-                        0
-                    )
-                );
-
-
-            timeRow.appendChild(
-                timeLabel
-            );
-
-
-            timeRow.appendChild(
-                timeValue
-            );
-
-
-            card.appendChild(
-                timeRow
-            );
-
-
-            /* עלות משחק */
-
-            const gameRow =
-                document.createElement(
-                    "div"
-                );
-
-
-            gameRow.style.cssText = `
-                display:flex;
-                justify-content:space-between;
-                margin-bottom:9px;
-            `;
-
-
-            const gameLabel =
-                document.createElement(
-                    "span"
-                );
-
-            gameLabel.textContent =
-                "עלות משחק";
-
-
-            const gameValue =
-                document.createElement(
-                    "span"
-                );
-
-            gameValue.textContent =
-                Number(
-                    sale.game_cost || 0
-                ).toFixed(2) +
-                " ₪";
-
-
-            gameRow.appendChild(
-                gameLabel
-            );
-
-
-            gameRow.appendChild(
-                gameValue
-            );
-
-
-            card.appendChild(
-                gameRow
-            );
-
-
-            /* הזמנות */
-
-            const ordersRow =
-                document.createElement(
-                    "div"
-                );
-
-
-            ordersRow.style.cssText = `
-                display:flex;
-                justify-content:space-between;
-                margin-bottom:9px;
-            `;
-
-
-            const ordersLabel =
-                document.createElement(
-                    "span"
-                );
-
-            ordersLabel.textContent =
-                "הזמנות";
-
-
-            const ordersValue =
-                document.createElement(
-                    "span"
-                );
-
-            ordersValue.textContent =
-                Number(
-                    sale.orders_cost || 0
-                ).toFixed(2) +
-                " ₪";
-
-
-            ordersRow.appendChild(
-                ordersLabel
-            );
-
-
-            ordersRow.appendChild(
-                ordersValue
-            );
-
-
-            card.appendChild(
-                ordersRow
-            );
-
-
-            /* פירוט מוצרים */
-
-            if (sale.sale_items && sale.sale_items.length > 0) {
-
-                const itemsGrouped = new Map();
-
-                sale.sale_items.forEach(function(item) {
-                    const key = item.product_name;
-                    if (!itemsGrouped.has(key)) {
-                        itemsGrouped.set(key, { name: item.product_name, qty: 0, total: 0 });
-                    }
-                    const entry = itemsGrouped.get(key);
-                    entry.qty += 1;
-                    entry.total += Number(item.price || 0);
-                });
-
-                const itemsBox = document.createElement("div");
-                itemsBox.style.cssText = `
-                    background:#111827;
-                    border-radius:7px;
-                    padding:10px 12px;
-                    margin-bottom:9px;
-                `;
-
-                Array.from(itemsGrouped.values()).forEach(function(entry) {
-                    const itemRow = document.createElement("div");
-                    itemRow.style.cssText = `
-                        display:flex;
-                        justify-content:space-between;
-                        font-size:13px;
-                        color:#9ca3af;
-                        padding:3px 0;
-                    `;
-                    itemRow.textContent =
-                        entry.name + (entry.qty > 1 ? " × " + entry.qty : "") +
-                        " — " + entry.total.toFixed(2) + " ₪";
-                    itemsBox.appendChild(itemRow);
-                });
-
-                card.appendChild(itemsBox);
+    const salesTable = document.createElement("table");
+    salesTable.style.cssText = "width:100%;border-collapse:collapse;font-size:13px;";
+
+    const salesThead = document.createElement("thead");
+    salesThead.innerHTML = `
+        <tr style="background:#18212f;">
+            <th style="padding:10px 6px;text-align:right;border-bottom:2px solid #374151;white-space:nowrap;">תאריך</th>
+            <th style="padding:10px 6px;text-align:right;border-bottom:2px solid #374151;">שם</th>
+            <th style="padding:10px 6px;text-align:right;border-bottom:2px solid #374151;">פריט</th>
+            <th style="padding:10px 6px;text-align:center;border-bottom:2px solid #374151;">כמות</th>
+            <th style="padding:10px 6px;text-align:right;border-bottom:2px solid #374151;">מחיר</th>
+        </tr>
+    `;
+    salesTable.appendChild(salesThead);
+
+    const salesTbody = document.createElement("tbody");
+
+    data.forEach(function(sale) {
+
+        const saleDate = new Date(sale.closed_at || sale.created_at);
+        const dateText =
+            saleDate.toLocaleDateString("he-IL") + " " +
+            saleDate.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+
+        const itemsGrouped = new Map();
+        (sale.sale_items || []).forEach(function(item) {
+            const key = item.product_name;
+            if (!itemsGrouped.has(key)) {
+                itemsGrouped.set(key, { name: item.product_name, qty: 0, total: 0 });
             }
+            const entry = itemsGrouped.get(key);
+            entry.qty += 1;
+            entry.total += Number(item.price || 0);
+        });
 
+        const rows = Array.from(itemsGrouped.values()).map(function(entry) {
+            return { item: entry.name, qty: entry.qty, price: entry.total };
+        });
 
-            /* סה"כ */
-
-            const totalRow =
-                document.createElement(
-                    "div"
-                );
-
-
-            totalRow.style.cssText = `
-                display:flex;
-                justify-content:space-between;
-                border-top:1px solid #374151;
-                padding-top:12px;
-                margin-top:12px;
-                font-size:18px;
-                font-weight:bold;
-                color:#4ade80;
-            `;
-
-
-            const saleTotalLabel =
-                document.createElement(
-                    "span"
-                );
-
-            saleTotalLabel.textContent =
-                'סה"כ';
-
-
-            const saleTotalValue =
-                document.createElement(
-                    "span"
-                );
-
-            saleTotalValue.textContent =
-                Number(
-                    sale.total_amount || 0
-                ).toFixed(2) +
-                " ₪";
-
-
-            totalRow.appendChild(
-                saleTotalLabel
-            );
-
-
-            totalRow.appendChild(
-                saleTotalValue
-            );
-
-
-            card.appendChild(
-                totalRow
-            );
-
-
-            salesHistory.appendChild(
-                card
-            );
-
+        if (Number(sale.game_cost || 0) > 0) {
+            rows.push({
+                item: "⏱ זמן משחק (" + formatTime(Number(sale.elapsed_seconds || 0)) + ")",
+                qty: "-",
+                price: Number(sale.game_cost)
+            });
         }
-    );
+
+        if (rows.length === 0) {
+            rows.push({ item: "-", qty: "-", price: Number(sale.total_amount || 0) });
+        }
+
+        rows.forEach(function(row, index) {
+            const tr = document.createElement("tr");
+            tr.style.cssText = "border-bottom:1px solid #263244;";
+
+            const dateCell = document.createElement("td");
+            dateCell.style.cssText = "padding:7px 6px;color:#9ca3af;font-size:12px;white-space:nowrap;";
+            dateCell.textContent = index === 0 ? dateText : "";
+
+            const nameCell = document.createElement("td");
+            nameCell.style.cssText = "padding:7px 6px;font-weight:bold;";
+            nameCell.textContent = index === 0 ? (sale.customer_name || "ללא שם") : "";
+
+            const itemCell = document.createElement("td");
+            itemCell.style.cssText = "padding:7px 6px;";
+            itemCell.textContent = row.item;
+
+            const qtyCell = document.createElement("td");
+            qtyCell.style.cssText = "padding:7px 6px;text-align:center;color:#9ca3af;";
+            qtyCell.textContent = row.qty;
+
+            const priceCell = document.createElement("td");
+            priceCell.style.cssText = "padding:7px 6px;text-align:right;white-space:nowrap;";
+            priceCell.textContent = Number(row.price).toFixed(2) + " ₪";
+
+            tr.appendChild(dateCell);
+            tr.appendChild(nameCell);
+            tr.appendChild(itemCell);
+            tr.appendChild(qtyCell);
+            tr.appendChild(priceCell);
+            salesTbody.appendChild(tr);
+        });
+
+        const totalTr = document.createElement("tr");
+        totalTr.style.cssText = "border-bottom:2px solid #374151;background:#18212f;";
+        totalTr.innerHTML =
+            '<td colspan="4" style="padding:7px 6px;text-align:right;font-weight:bold;color:#4ade80;">סה"כ</td>' +
+            '<td style="padding:7px 6px;text-align:right;font-weight:bold;color:#4ade80;white-space:nowrap;">' +
+            Number(sale.total_amount || 0).toFixed(2) + ' ₪</td>';
+        salesTbody.appendChild(totalTr);
+    });
+
+    salesTable.appendChild(salesTbody);
+
+    const salesTableWrapper = document.createElement("div");
+    salesTableWrapper.style.cssText = "overflow-x:auto;";
+    salesTableWrapper.appendChild(salesTable);
+
+    salesHistory.appendChild(salesTableWrapper);
 
 
     salesHistory.style.display =
