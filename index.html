@@ -2187,68 +2187,6 @@ function formatTime(totalSeconds) {
     );
 }
 
-function csvCell(value) {
-    const text = String(value);
-    if (text.indexOf(",") !== -1 || text.indexOf('"') !== -1 || text.indexOf("\n") !== -1) {
-        return '"' + text.replace(/"/g, '""') + '"';
-    }
-    return text;
-}
-
-function buildSalesCsv(salesData) {
-    const rows = [["תאריך", "שם", "פריט", "כמות", "מחיר"]];
-
-    salesData.forEach(function(sale) {
-        const saleDate = new Date(sale.closed_at || sale.created_at);
-        const dateText =
-            saleDate.toLocaleDateString("he-IL") + " " +
-            saleDate.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
-
-        const itemsGrouped = new Map();
-        (sale.sale_items || []).forEach(function(item) {
-            const key = item.product_name;
-            if (!itemsGrouped.has(key)) {
-                itemsGrouped.set(key, { name: item.product_name, qty: 0, total: 0 });
-            }
-            const entry = itemsGrouped.get(key);
-            entry.qty += 1;
-            entry.total += Number(item.price || 0);
-        });
-
-        const itemRows = Array.from(itemsGrouped.values()).map(function(entry) {
-            return [entry.name, entry.qty, entry.total.toFixed(2)];
-        });
-
-        if (Number(sale.game_cost || 0) > 0) {
-            itemRows.push([
-                "זמן משחק (" + formatTime(Number(sale.elapsed_seconds || 0)) + ")",
-                "-",
-                Number(sale.game_cost).toFixed(2)
-            ]);
-        }
-
-        if (itemRows.length === 0) {
-            itemRows.push(["-", "-", Number(sale.total_amount || 0).toFixed(2)]);
-        }
-
-        itemRows.forEach(function(itemRow, index) {
-            rows.push([
-                index === 0 ? dateText : "",
-                index === 0 ? (sale.customer_name || "ללא שם") : "",
-                itemRow[0],
-                itemRow[1],
-                itemRow[2]
-            ]);
-        });
-
-        rows.push(["", "", 'סה"כ', "", Number(sale.total_amount || 0).toFixed(2)]);
-    });
-
-    return rows.map(function(row) {
-        return row.map(csvCell).join(",");
-    }).join("\r\n");
-}
-
 function buildSalesReportRows(salesData) {
     const allRows = [];
 
@@ -2658,57 +2596,18 @@ async function loadSalesHistory() {
     ========================= */
 
     const exportRow = document.createElement("div");
-    exportRow.style.cssText = "display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;";
+    exportRow.style.cssText = "margin-bottom:20px;";
 
     const pdfBtn = document.createElement("button");
     pdfBtn.type = "button";
-    pdfBtn.textContent = "📄 PDF";
+    pdfBtn.textContent = "📄 שמור / הדפס PDF";
     pdfBtn.style.cssText =
-        "padding:12px 4px;background:#dc2626;color:white;font-weight:bold;font-size:13px;";
+        "width:100%;padding:13px;background:#dc2626;color:white;font-weight:bold;font-size:15px;";
     pdfBtn.addEventListener("click", function() {
         printSalesReport(data, totalIncome);
     });
 
-    const downloadBtn = document.createElement("button");
-    downloadBtn.type = "button";
-    downloadBtn.textContent = "📥 CSV";
-    downloadBtn.style.cssText =
-        "padding:12px 4px;background:#16a34a;color:white;font-weight:bold;font-size:13px;";
-    downloadBtn.addEventListener("click", function() {
-        const csv = "﻿" + buildSalesCsv(data);
-        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = "היסטוריית-מכירות.csv";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-    });
-
-    const emailBtn = document.createElement("button");
-    emailBtn.type = "button";
-    emailBtn.textContent = "📧 מייל";
-    emailBtn.style.cssText =
-        "padding:12px 4px;background:#2563eb;color:white;font-weight:bold;font-size:13px;";
-    emailBtn.addEventListener("click", function() {
-        let body = "היסטוריית מכירות\n\n" + 'סה"כ: ' + totalIncome.toFixed(2) + " ₪\n\n";
-        data.forEach(function(sale) {
-            const saleDate = new Date(sale.closed_at || sale.created_at);
-            body +=
-                saleDate.toLocaleDateString("he-IL") + " - " +
-                (sale.customer_name || "ללא שם") + " - " +
-                Number(sale.total_amount || 0).toFixed(2) + " ₪\n";
-        });
-        window.location.href =
-            "mailto:?subject=" + encodeURIComponent("היסטוריית מכירות") +
-            "&body=" + encodeURIComponent(body);
-    });
-
     exportRow.appendChild(pdfBtn);
-    exportRow.appendChild(downloadBtn);
-    exportRow.appendChild(emailBtn);
     salesHistory.appendChild(exportRow);
 
 
