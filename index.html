@@ -625,6 +625,12 @@ tableElement.addEventListener(
         `;
 
         tableElement.appendChild(details);
+        details.addEventListener(
+       "click",
+       function(event) {
+        event.stopPropagation();
+      }
+  );
        const startTableGameButton =
     details.querySelector(".start-table-game");
 
