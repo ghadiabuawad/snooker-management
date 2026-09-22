@@ -775,11 +775,23 @@ updateGameTableTimer();
         const gameCost = getGameCost(finalState);
         const shareCost = gameCost / payerNames.length;
 
+        const includeBarTab = {};
+        payerNames.forEach(function(payerName) {
+            const barTotal = getTabTotal(payerName);
+            includeBarTab[payerName] = barTotal > 0
+                ? confirm(
+                    "ל" + payerName + " יש הזמנות פתוחות מהבר בסך " +
+                    barTotal.toFixed(2) + " ₪.\n\n" +
+                    "לסגור אותן ביחד עם חשבון השולחן?"
+                )
+                : false;
+        });
+
         const { error: saleError } = await db
             .from("sales")
             .insert(
                 payerNames.map(function(payerName) {
-                    const payerOrdersTotal = getTabTotal(payerName);
+                    const payerOrdersTotal = includeBarTab[payerName] ? getTabTotal(payerName) : 0;
                     const payerTotal = shareCost + payerOrdersTotal;
                     return {
                         customer_name: payerName,
@@ -802,7 +814,7 @@ updateGameTableTimer();
         }
 
         for (const payerName of payerNames) {
-            if (getTabTotal(payerName) > 0) {
+            if (includeBarTab[payerName]) {
                 await db
                     .from("tab_orders")
                     .delete()
@@ -811,10 +823,10 @@ updateGameTableTimer();
         }
 
         tabOrders = tabOrders.filter(function(order) {
-            return payerNames.indexOf(order.tab_name) === -1;
+            return !includeBarTab[order.tab_name];
         });
         barNames = barNames.filter(function(n) {
-            return payerNames.indexOf(n) === -1;
+            return !includeBarTab[n];
         });
 
         const { error: tableError } = await db
