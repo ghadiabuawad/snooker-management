@@ -2249,6 +2249,122 @@ function buildSalesCsv(salesData) {
     }).join("\r\n");
 }
 
+function buildSalesReportRows(salesData) {
+    const allRows = [];
+
+    salesData.forEach(function(sale) {
+        const saleDate = new Date(sale.closed_at || sale.created_at);
+        const dateText =
+            saleDate.toLocaleDateString("he-IL") + " " +
+            saleDate.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+
+        const itemsGrouped = new Map();
+        (sale.sale_items || []).forEach(function(item) {
+            const key = item.product_name;
+            if (!itemsGrouped.has(key)) {
+                itemsGrouped.set(key, { name: item.product_name, qty: 0, total: 0 });
+            }
+            const entry = itemsGrouped.get(key);
+            entry.qty += 1;
+            entry.total += Number(item.price || 0);
+        });
+
+        const itemRows = Array.from(itemsGrouped.values()).map(function(entry) {
+            return { item: entry.name, qty: entry.qty, price: entry.total };
+        });
+
+        if (Number(sale.game_cost || 0) > 0) {
+            itemRows.push({
+                item: "⏱ זמן משחק (" + formatTime(Number(sale.elapsed_seconds || 0)) + ")",
+                qty: "-",
+                price: Number(sale.game_cost)
+            });
+        }
+
+        if (itemRows.length === 0) {
+            itemRows.push({ item: "-", qty: "-", price: Number(sale.total_amount || 0) });
+        }
+
+        itemRows.forEach(function(row, index) {
+            allRows.push({
+                date: index === 0 ? dateText : "",
+                name: index === 0 ? (sale.customer_name || "ללא שם") : "",
+                item: row.item,
+                qty: row.qty,
+                price: Number(row.price).toFixed(2)
+            });
+        });
+
+        allRows.push({
+            date: "",
+            name: "",
+            item: 'סה"כ',
+            qty: "",
+            price: Number(sale.total_amount || 0).toFixed(2),
+            isTotal: true
+        });
+    });
+
+    return allRows;
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+}
+
+function printSalesReport(salesData, totalIncomeValue) {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+        alert("הדפדפן חסם את פתיחת חלון ההדפסה. אשר חלונות קופצים ונסה שוב.");
+        return;
+    }
+
+    const rows = buildSalesReportRows(salesData);
+
+    const rowsHtml = rows.map(function(row) {
+        const style = row.isTotal ? ' style="font-weight:bold;background:#f3f4f6;"' : "";
+        return "<tr" + style + ">" +
+            "<td>" + escapeHtml(row.date) + "</td>" +
+            "<td>" + escapeHtml(row.name) + "</td>" +
+            "<td>" + escapeHtml(row.item) + "</td>" +
+            "<td style=\"text-align:center;\">" + escapeHtml(row.qty) + "</td>" +
+            "<td style=\"text-align:left;white-space:nowrap;\">" + escapeHtml(row.price) + " ₪</td>" +
+            "</tr>";
+    }).join("");
+
+    const html = "<!DOCTYPE html>" +
+        '<html lang="he" dir="rtl"><head><meta charset="UTF-8"><title>היסטוריית מכירות</title>' +
+        "<style>" +
+        "body{font-family:Arial,sans-serif;color:#111827;padding:24px;}" +
+        "h1{font-size:20px;margin-bottom:4px;}" +
+        ".sub{color:#6b7280;margin-bottom:20px;font-size:13px;}" +
+        ".total-box{background:#f3f4f6;border:1px solid #d1d5db;border-radius:8px;padding:14px 18px;" +
+        "margin-bottom:20px;display:flex;justify-content:space-between;font-size:16px;font-weight:bold;}" +
+        "table{width:100%;border-collapse:collapse;font-size:13px;}" +
+        "th,td{border-bottom:1px solid #d1d5db;padding:6px 8px;text-align:right;}" +
+        "th{background:#f3f4f6;}" +
+        "</style></head><body>" +
+        "<h1>🎱 royal ball - היסטוריית מכירות</h1>" +
+        '<div class="sub">הופק בתאריך ' + escapeHtml(new Date().toLocaleDateString("he-IL")) + "</div>" +
+        '<div class="total-box"><span>סה"כ מכירות</span><span>' +
+        totalIncomeValue.toFixed(2) + " ₪</span></div>" +
+        "<table><thead><tr><th>תאריך</th><th>שם</th><th>פריט</th>" +
+        '<th style="text-align:center;">כמות</th><th style="text-align:left;">מחיר</th></tr></thead>' +
+        "<tbody>" + rowsHtml + "</tbody></table>" +
+        "</body></html>";
+
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.onload = function() {
+        printWindow.focus();
+        printWindow.print();
+    };
+}
+
 
 function getElapsedSeconds(customer) {
 
@@ -2542,13 +2658,22 @@ async function loadSalesHistory() {
     ========================= */
 
     const exportRow = document.createElement("div");
-    exportRow.style.cssText = "display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:20px;";
+    exportRow.style.cssText = "display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;";
+
+    const pdfBtn = document.createElement("button");
+    pdfBtn.type = "button";
+    pdfBtn.textContent = "📄 PDF";
+    pdfBtn.style.cssText =
+        "padding:12px 4px;background:#dc2626;color:white;font-weight:bold;font-size:13px;";
+    pdfBtn.addEventListener("click", function() {
+        printSalesReport(data, totalIncome);
+    });
 
     const downloadBtn = document.createElement("button");
     downloadBtn.type = "button";
-    downloadBtn.textContent = "📥 הורד כקובץ";
+    downloadBtn.textContent = "📥 CSV";
     downloadBtn.style.cssText =
-        "padding:12px;background:#16a34a;color:white;font-weight:bold;font-size:14px;";
+        "padding:12px 4px;background:#16a34a;color:white;font-weight:bold;font-size:13px;";
     downloadBtn.addEventListener("click", function() {
         const csv = "﻿" + buildSalesCsv(data);
         const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -2564,9 +2689,9 @@ async function loadSalesHistory() {
 
     const emailBtn = document.createElement("button");
     emailBtn.type = "button";
-    emailBtn.textContent = "📧 שלח במייל";
+    emailBtn.textContent = "📧 מייל";
     emailBtn.style.cssText =
-        "padding:12px;background:#2563eb;color:white;font-weight:bold;font-size:14px;";
+        "padding:12px 4px;background:#2563eb;color:white;font-weight:bold;font-size:13px;";
     emailBtn.addEventListener("click", function() {
         let body = "היסטוריית מכירות\n\n" + 'סה"כ: ' + totalIncome.toFixed(2) + " ₪\n\n";
         data.forEach(function(sale) {
@@ -2581,6 +2706,7 @@ async function loadSalesHistory() {
             "&body=" + encodeURIComponent(body);
     });
 
+    exportRow.appendChild(pdfBtn);
     exportRow.appendChild(downloadBtn);
     exportRow.appendChild(emailBtn);
     salesHistory.appendChild(exportRow);
