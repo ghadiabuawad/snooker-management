@@ -341,6 +341,10 @@ button:disabled{
         📊 היסטוריית מכירות
     </button>
 
+    <div style="text-align:center;color:#9ca3af;font-size:12px;margin-top:6px;">
+        (למורשים בלבד)
+    </div>
+
     <div
         id="salesHistory"
         style="
@@ -2239,6 +2243,79 @@ const salesHistory =
     document.getElementById("salesHistory");
 
 
+const SALES_HISTORY_PIN = "1234";
+
+function askSalesHistoryPin() {
+    return new Promise(function(resolve) {
+        const overlay = document.createElement("div");
+        overlay.style.cssText =
+            "position:fixed;inset:0;background:rgba(0,0,0,.7);" +
+            "display:flex;align-items:center;justify-content:center;" +
+            "z-index:2000;padding:20px;";
+
+        const box = document.createElement("div");
+        box.style.cssText =
+            "background:#1f2937;border:1px solid #374151;border-radius:12px;" +
+            "padding:24px;max-width:300px;width:100%;text-align:center;";
+
+        const title = document.createElement("div");
+        title.style.cssText = "font-size:17px;font-weight:bold;margin-bottom:15px;";
+        title.textContent = "🔒 קוד גישה להיסטוריית מכירות";
+        box.appendChild(title);
+
+        const pinInput = document.createElement("input");
+        pinInput.type = "password";
+        pinInput.inputMode = "numeric";
+        pinInput.maxLength = 4;
+        pinInput.placeholder = "קוד בן 4 ספרות";
+        pinInput.style.cssText =
+            "width:100%;margin-bottom:15px;text-align:center;font-size:20px;letter-spacing:6px;";
+        box.appendChild(pinInput);
+
+        function close(result) {
+            overlay.remove();
+            resolve(result);
+        }
+
+        function submit() {
+            if (pinInput.value === SALES_HISTORY_PIN) {
+                close(true);
+            } else {
+                alert("קוד שגוי");
+                pinInput.value = "";
+                pinInput.focus();
+            }
+        }
+
+        const confirmBtn = document.createElement("button");
+        confirmBtn.type = "button";
+        confirmBtn.textContent = "✓ כניסה";
+        confirmBtn.style.cssText =
+            "width:100%;padding:12px;margin-bottom:10px;" +
+            "background:#16a34a;color:white;font-weight:bold;font-size:15px;";
+        confirmBtn.addEventListener("click", submit);
+
+        const cancelBtn = document.createElement("button");
+        cancelBtn.type = "button";
+        cancelBtn.textContent = "ביטול";
+        cancelBtn.style.cssText = "width:100%;padding:11px;background:#4b5563;color:white;";
+        cancelBtn.addEventListener("click", function() { close(false); });
+
+        pinInput.addEventListener("keydown", function(event) {
+            if (event.key === "Enter") submit();
+        });
+
+        box.appendChild(confirmBtn);
+        box.appendChild(cancelBtn);
+        overlay.appendChild(box);
+        overlay.addEventListener("click", function(event) {
+            if (event.target === overlay) close(false);
+        });
+        document.body.appendChild(overlay);
+        pinInput.focus();
+    });
+}
+
 salesHistoryBtn.addEventListener(
     "click",
     loadSalesHistory
@@ -2255,6 +2332,11 @@ async function loadSalesHistory() {
         salesHistoryBtn.textContent =
             "📊 היסטוריית מכירות";
 
+        return;
+    }
+
+    const pinCorrect = await askSalesHistoryPin();
+    if (!pinCorrect) {
         return;
     }
 
