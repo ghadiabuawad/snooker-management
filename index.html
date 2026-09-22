@@ -226,6 +226,24 @@ button:disabled{
     font-size:17px
 }
 
+.table-account-actions{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:10px;
+    margin-top:20px
+}
+
+.table-account-actions button{
+    width:100%;
+    min-width:0;
+    padding:14px 8px;
+    font-weight:bold;
+    font-size:17px
+}
+
+.table-checkout{background:#f59e0b;color:#111827}
+.table-debt{background:#dc2626;color:white}
+
 @media(max-width:600px){
     .add-customer,
     .buttons{
@@ -680,20 +698,10 @@ tableElement.addEventListener(
         </div>
         <div class="table-timer-status" style="text-align:center;margin-bottom:15px;"></div>
         <div class="active-table-players"></div>
-        <button
-    class="table-checkout"
-    style="
-        width:100%;
-        padding:14px;
-        margin-top:20px;
-        background:#f59e0b;
-        color:#111827;
-        font-weight:bold;
-        font-size:17px;
-    "
->
-    ✓ סגור חשבון
-</button>
+        <div class="table-account-actions">
+            <button type="button" class="table-checkout">✓ סגור חשבון</button>
+            <button type="button" class="table-debt">חוב</button>
+        </div>
     `;
 
     tableElement.appendChild(details);
