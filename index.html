@@ -51,10 +51,15 @@ button{
 .section-title{margin-bottom:15px}
 
 .customer{
-    background:#1f2937;
-    border:1px solid #374151;
-    border-radius:10px;
-    margin-bottom:12px;
+    background:
+        radial-gradient(circle 8px at 12px 12px, #1a1006 97%, transparent 100%),
+        radial-gradient(circle 8px at calc(100% - 12px) 12px, #1a1006 97%, transparent 100%),
+        radial-gradient(circle 8px at 12px calc(100% - 12px), #1a1006 97%, transparent 100%),
+        radial-gradient(circle 8px at calc(100% - 12px) calc(100% - 12px), #1a1006 97%, transparent 100%),
+        radial-gradient(ellipse at center, #146b3f 0%, #0c4a2c 100%);
+    border:7px solid #6b4423;
+    border-radius:16px;
+    margin-bottom:16px;
     overflow:hidden
 }
 
@@ -63,7 +68,8 @@ button{
     display:flex;
     justify-content:space-between;
     align-items:center;
-    cursor:pointer
+    cursor:pointer;
+    background:rgba(0,0,0,.18)
 }
 
 .customer-name{
