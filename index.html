@@ -567,17 +567,6 @@ function renderGameTables() {
                     return Number(a.position) - Number(b.position);
                 });
 
-        let playersText = "אין שחקנים";
-
-        if (players.length > 0) {
-            playersText =
-                players
-                    .map(function(player) {
-                        return player.player_name;
-                    })
-                    .join(" • ");
-        }
-
         /* שעת התחלה */
         let startTimeText = "--:--";
 
@@ -605,14 +594,7 @@ function renderGameTables() {
                         🎱 שולחן ${table.table_number}
                     </div>
 
-                    <div
-                        style="
-                            margin-top:8px;
-                            font-size:16px;
-                        "
-                    >
-                        👤 ${playersText}
-                    </div>
+                    <div class="table-header-players" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;"></div>
 
                     <div class="table-start-label"
                         style="
@@ -628,6 +610,21 @@ function renderGameTables() {
 
             </div>
         `;
+
+const headerPlayers = tableElement.querySelector(".table-header-players");
+if (players.length === 0) {
+    headerPlayers.textContent = "אין שחקנים";
+}
+players.forEach(function(player) {
+    const playerButton = document.createElement("button");
+    playerButton.type = "button";
+    playerButton.textContent = "👤 " + player.player_name;
+    playerButton.style.cssText = "padding:12px 18px;background:#2563eb;color:white;font-weight:bold;font-size:16px;max-width:100%;overflow-wrap:anywhere;";
+    playerButton.addEventListener("click", function(event) {
+        event.stopPropagation();
+    });
+    headerPlayers.appendChild(playerButton);
+});
 
 tableElement.addEventListener(
     "click",
@@ -684,20 +681,12 @@ tableElement.addEventListener(
     עלות משחק: 0.00 ₪
 </div>
          
-        <div style="
-            font-weight:bold;
-            margin-bottom:12px;
-        ">
-            שחקנים
-        </div>
-
         <div class="buttons">
             <button class="start table-resume">▶ המשך זמן</button>
             <button class="stop table-stop">■ עצור</button>
             <button class="table-reset" style="background:#4b5563;color:white;">↻ איפוס זמן</button>
         </div>
         <div class="table-timer-status" style="text-align:center;margin-bottom:15px;"></div>
-        <div class="active-table-players"></div>
         <div class="table-account-actions">
             <button type="button" class="table-checkout">✓ סגור חשבון</button>
             <button type="button" class="table-debt">חוב</button>
@@ -747,31 +736,6 @@ updateGameTableTimer();
 
     const tableCheckoutButton =
     details.querySelector(".table-checkout");
-             
-    const activePlayersContainer =
-    details.querySelector(".active-table-players");
-
-players.forEach(function(player) {
-
-    const playerButton =
-        document.createElement("button");
-
-    playerButton.textContent =
-        "👤 " + player.player_name;
-
-    playerButton.style.cssText = `
-        padding:12px 18px;
-        margin:5px;
-        background:#2563eb;
-        color:white;
-        font-weight:bold;
-        font-size:16px;
-    `;
-
-    activePlayersContainer.appendChild(
-        playerButton
-    );
-});
              
     return;
 }
