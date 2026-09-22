@@ -635,6 +635,22 @@ function updateGameTableTimer() {
              })
             
         );
+    const tableForCost = {
+    elapsedSeconds: Number(table.elapsed_seconds || 0),
+    running: Boolean(table.running),
+    startedAt: table.started_at
+        ? new Date(table.started_at).getTime()
+        : null,
+    hourlyPrice: Number(table.hourly_price || 0)
+};
+
+const gameCost =
+    getGameCost(tableForCost);
+
+gameTableCost.textContent =
+    "עלות משחק: " +
+    gameCost.toFixed(2) +
+    " ₪";
 }
 
 updateGameTableTimer();
