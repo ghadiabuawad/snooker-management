@@ -120,6 +120,15 @@ button{
 .ball-badge[data-number="7"]{background:#7a1f1f}
 .ball-badge[data-number="8"]{background:#111827}
 
+@keyframes ballSpin{
+    from{transform:rotate(0deg)}
+    to{transform:rotate(360deg)}
+}
+
+.ball-badge.spinning{
+    animation:ballSpin 1.4s linear infinite
+}
+
 .buttons{
     display:flex;
     gap:10px;
@@ -664,7 +673,7 @@ function renderGameTables() {
                 <div>
 
                     <div class="customer-name">
-                        <span class="ball-badge" data-number="${table.table_number}"></span>
+                        <span class="ball-badge${table.running ? " spinning" : ""}" data-number="${table.table_number}"></span>
                     </div>
 
                     <div class="table-header-players" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;"></div>
@@ -782,6 +791,8 @@ function updateGameTableTimer() {
     const state = tableTimerState(table);
     gameTableTimer.textContent = formatTime(getElapsedSeconds(state));
     gameTableCost.textContent = "עלות משחק: " + getGameCost(state).toFixed(2) + " ₪";
+    const ballBadge = tableElement.querySelector(".ball-badge");
+    if (ballBadge) ballBadge.classList.toggle("spinning", state.running);
     const saving = gameTableSaves.has(table.id);
     resumeTableButton.disabled = saving || state.running;
     stopTableButton.disabled = saving || !state.running;
