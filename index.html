@@ -1249,7 +1249,7 @@ function openTabModal(name) {
 
                     if (error) {
                         console.error("Remove tab order error:", error);
-                        alert("שגיאה במחיקת ההזמנה");
+                        alert("שגיאה במחיקת ההזמנה: " + error.message);
                         removeBtn.disabled = false;
                         return;
                     }
@@ -1305,7 +1305,7 @@ function openTabModal(name) {
 
                 if (error) {
                     console.error("Add tab order error:", error);
-                    alert("שגיאה בהוספת ההזמנה");
+                    alert("שגיאה בהוספת ההזמנה: " + error.message);
                     return;
                 }
 
@@ -1377,7 +1377,7 @@ function openTabModal(name) {
 
         if (error) {
             console.error("Add product error:", error);
-            alert("שגיאה בהוספת המוצר");
+            alert("שגיאה בהוספת המוצר: " + error.message);
             return;
         }
 
@@ -1427,7 +1427,7 @@ function openTabModal(name) {
 
         if (saleError) {
             console.error("Close tab error:", saleError);
-            alert("שגיאה בשמירת החשבון");
+            alert("שגיאה בשמירת החשבון: " + saleError.message);
             closeTabBtn.disabled = false;
             closeTabBtn.textContent = "✓ סגור חשבון";
             return;
