@@ -434,6 +434,62 @@ const customersList =
     document.getElementById("customersList");
 
 let customers = [];
+let gameTables = [];
+const gameTablesList = document.getElementById("gameTablesList");
+const gameTableDisplays = new Map();
+const gameTableSaves = new Set();
+
+// One refresh loop for all expanded tables; closing a card removes its callback.
+setInterval(function() {
+    gameTableDisplays.forEach(function(update) { update(); });
+}, 1000);
+
+function tableTimerState(table) {
+    return {
+        elapsedSeconds: Number(table.elapsed_seconds || 0),
+        running: Boolean(table.running),
+        startedAt: table.started_at ? new Date(table.started_at).getTime() : null,
+        hourlyPrice: Number(table.hourly_price || 0)
+    };
+}
+
+async function changeTableTimer(table, action) {
+    if (gameTableSaves.has(table.id)) return;
+    if (action === "stop" && !table.running) return;
+    if (action === "resume" && table.running) return;
+    if (action === "reset" && !confirm(
+        "האם לאפס את הזמן ועלות המשחק של שולחן " + table.table_number + "?"
+    )) return;
+
+    const changes = {
+        running: action === "resume",
+        started_at: action === "resume" ? new Date().toISOString() : null,
+        elapsed_seconds: action === "reset" ? 0 :
+            getElapsedSeconds(tableTimerState(table)),
+        updated_at: new Date().toISOString()
+    };
+    gameTableSaves.add(table.id);
+    const refresh = function() {
+        const update = gameTableDisplays.get(table.id);
+        if (update) update();
+    };
+    refresh();
+    try {
+        const { data, error } = await db.from("game_tables")
+            .update(changes).eq("id", table.id)
+            .select("id, running, started_at, elapsed_seconds, updated_at").single();
+        if (error) throw error;
+        if (!data) throw new Error("No table was updated");
+        Object.assign(table, data);
+    } catch (error) {
+        console.error("Save table timer error:", error);
+        alert("שגיאה בשמירת הטיימר של שולחן " + table.table_number + ". נסה שוב.");
+    } finally {
+        gameTableSaves.delete(table.id);
+        refresh();
+    }
+}
+
 
 /* =========================
    LOAD GAME TABLES
@@ -475,6 +531,7 @@ async function loadGameTables() {
 
 function renderGameTables() {
 
+    gameTableDisplays.clear();
     gameTablesList.innerHTML = "";
 
     gameTables.forEach(function(table) {
@@ -539,7 +596,7 @@ function renderGameTables() {
                         👤 ${playersText}
                     </div>
 
-                    <div
+                    <div class="table-start-label"
                         style="
                             margin-top:7px;
                             color:#9ca3af;
@@ -564,6 +621,7 @@ tableElement.addEventListener(
             );
 
         if (existingDetails) {
+            gameTableDisplays.delete(table.id);
             existingDetails.remove();
             return;
         }
@@ -579,7 +637,11 @@ tableElement.addEventListener(
         details.style.borderTop =
             "1px solid #374151";
 
-         if (table.running) {
+        details.addEventListener("click", function(event) {
+            event.stopPropagation();
+        });
+
+        if (table.running || players.length > 0 || Number(table.elapsed_seconds) > 0) {
 
     details.innerHTML = `
         <div style="
@@ -611,6 +673,12 @@ tableElement.addEventListener(
             שחקנים
         </div>
 
+        <div class="buttons">
+            <button class="start table-resume">▶ המשך זמן</button>
+            <button class="stop table-stop">■ עצור</button>
+            <button class="table-reset" style="background:#4b5563;color:white;">↻ איפוס זמן</button>
+        </div>
+        <div class="table-timer-status" style="text-align:center;margin-bottom:15px;"></div>
         <div class="active-table-players"></div>
         <button
     class="table-checkout"
@@ -635,44 +703,40 @@ tableElement.addEventListener(
     const gameTableCost =
     details.querySelector(".game-table-cost");
 
+const resumeTableButton = details.querySelector(".table-resume");
+const stopTableButton = details.querySelector(".table-stop");
+const resetTableButton = details.querySelector(".table-reset");
+const tableTimerStatus = details.querySelector(".table-timer-status");
+
 function updateGameTableTimer() {
-
-    gameTableTimer.textContent =
-        formatTime(
-            
-           getElapsedSeconds({
-           elapsedSeconds: Number(table.elapsed_seconds || 0),
-           running: Boolean(table.running),
-           startedAt: table.started_at
-              ? new Date(table.started_at).getTime()
-               : null
-             })
-            
-        );
-    const tableForCost = {
-    elapsedSeconds: Number(table.elapsed_seconds || 0),
-    running: Boolean(table.running),
-    startedAt: table.started_at
-        ? new Date(table.started_at).getTime()
-        : null,
-    hourlyPrice: Number(table.hourly_price || 0)
-};
-
-const gameCost =
-    getGameCost(tableForCost);
-
-gameTableCost.textContent =
-    "עלות משחק: " +
-    gameCost.toFixed(2) +
-    " ₪";
+    const state = tableTimerState(table);
+    gameTableTimer.textContent = formatTime(getElapsedSeconds(state));
+    gameTableCost.textContent = "עלות משחק: " + getGameCost(state).toFixed(2) + " ₪";
+    const saving = gameTableSaves.has(table.id);
+    resumeTableButton.disabled = saving || state.running;
+    stopTableButton.disabled = saving || !state.running;
+    resetTableButton.disabled = saving;
+    tableTimerStatus.textContent = saving ? "שומר..." :
+        state.running ? "● הזמן פועל" : "● הזמן נעצר";
+    const startLabel = tableElement.querySelector(".table-start-label");
+    startLabel.textContent = "🕐 שעת התחלה: " + (table.started_at ?
+        new Date(table.started_at).toLocaleTimeString("he-IL", {
+            hour: "2-digit", minute: "2-digit"
+        }) : "--:--");
 }
 
+resumeTableButton.addEventListener("click", function() {
+    return changeTableTimer(table, "resume");
+});
+stopTableButton.addEventListener("click", function() {
+    return changeTableTimer(table, "stop");
+});
+resetTableButton.addEventListener("click", function() {
+    return changeTableTimer(table, "reset");
+});
+gameTableDisplays.set(table.id, updateGameTableTimer);
 updateGameTableTimer();
 
-setInterval(
-    updateGameTableTimer,
-    1000
-);        
     const tableCheckoutButton =
     details.querySelector(".table-checkout");
              
@@ -3336,6 +3400,9 @@ logoutBtn.addEventListener(
 
 
         customers = [];
+        gameTables = [];
+        gameTableDisplays.clear();
+        gameTablesList.innerHTML = "";
 
         customersList.innerHTML = "";
 
