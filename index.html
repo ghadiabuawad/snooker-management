@@ -610,7 +610,15 @@ function updateGameTableTimer() {
 
     gameTableTimer.textContent =
         formatTime(
-            getGameTableElapsedSeconds(table)
+            
+           getElapsedSeconds({
+           elapsedSeconds: Number(table.elapsed_seconds || 0),
+           running: Boolean(table.running),
+           startedAt: table.started_at
+              ? new Date(table.started_at).getTime()
+               : null
+             })
+            
         );
 }
 
