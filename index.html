@@ -435,6 +435,78 @@ const customersList =
 
 let customers = [];
 
+/* =========================
+   LOAD GAME TABLES
+========================= */
+
+async function loadGameTables() {
+
+    const { data, error } =
+        await db
+            .from("game_tables")
+            .select(`
+                *,
+                table_players (*)
+            `)
+            .order(
+                "table_number",
+                { ascending: false }
+            );
+
+    if (error) {
+        console.error(
+            "Load game tables error:",
+            error
+        );
+
+        alert("שגיאה בטעינת שולחנות המשחק");
+        return;
+    }
+
+    gameTables = data || [];
+
+    renderGameTables();
+}
+
+
+/* =========================
+   RENDER GAME TABLES
+========================= */
+
+function renderGameTables() {
+
+    gameTablesList.innerHTML = "";
+
+    gameTables.forEach(function(table) {
+
+        const tableElement =
+            document.createElement("div");
+
+        tableElement.className = "customer";
+
+        tableElement.innerHTML = `
+            <div class="customer-header">
+                <div>
+                    <div class="customer-name">
+                        🎱 שולחן ${table.table_number}
+                    </div>
+
+                    <div class="status">
+                        עד 4 שחקנים
+                    </div>
+                </div>
+
+                <div>
+                    ${Number(table.hourly_price).toFixed(0)} ₪ / שעה
+                </div>
+            </div>
+        `;
+
+        gameTablesList.appendChild(
+            tableElement
+        );
+    });
+}
 
 /* =========================
    LOGIN
