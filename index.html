@@ -228,6 +228,33 @@ button:disabled{
     padding-top:25px;
 ">
 
+    <h2 class="section-title">👤 לקוחות</h2>
+
+    <div id="barNamesList" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:15px;"></div>
+
+    <button
+        id="addBarNameBtn"
+        type="button"
+        style="
+            width:100%;
+            padding:12px;
+            background:#374151;
+            color:white;
+            font-weight:bold;
+            font-size:15px;
+        "
+    >
+        + הוסף שם
+    </button>
+
+</div>
+
+<div style="
+    margin-top:35px;
+    border-top:1px solid #374151;
+    padding-top:25px;
+">
+
     <button
         id="salesHistoryBtn"
         style="
@@ -281,6 +308,19 @@ let gameTables = [];
 const gameTablesList = document.getElementById("gameTablesList");
 const gameTableDisplays = new Map();
 const gameTableSaves = new Set();
+
+let products = [];
+let tabOrders = [];
+let barNames = [];
+const barNamesList = document.getElementById("barNamesList");
+const addBarNameBtn = document.getElementById("addBarNameBtn");
+
+const PRODUCT_CATEGORIES = [
+    { key: "food", label: "🍔 אוכל" },
+    { key: "drinks", label: "🥤 שתיה" },
+    { key: "hookah", label: "💨 נרגילה" },
+    { key: "alcohol", label: "🍺 אלכוהול" }
+];
 
 // One refresh loop for all expanded tables; closing a card removes its callback.
 setInterval(function() {
@@ -700,13 +740,15 @@ updateGameTableTimer();
             .from("sales")
             .insert(
                 payerNames.map(function(payerName) {
+                    const payerOrdersTotal = getTabTotal(payerName);
+                    const payerTotal = shareCost + payerOrdersTotal;
                     return {
                         customer_name: payerName,
                         hourly_price: Number(table.hourly_price || 0),
                         elapsed_seconds: elapsedSeconds,
                         game_cost: Number(shareCost.toFixed(2)),
-                        orders_cost: 0,
-                        total_amount: Number(shareCost.toFixed(2)),
+                        orders_cost: Number(payerOrdersTotal.toFixed(2)),
+                        total_amount: Number(payerTotal.toFixed(2)),
                         closed_at: new Date().toISOString()
                     };
                 })
@@ -719,6 +761,22 @@ updateGameTableTimer();
             tableCheckoutButton.textContent = "✓ סגור חשבון";
             return;
         }
+
+        for (const payerName of payerNames) {
+            if (getTabTotal(payerName) > 0) {
+                await db
+                    .from("tab_orders")
+                    .delete()
+                    .eq("tab_name", payerName);
+            }
+        }
+
+        tabOrders = tabOrders.filter(function(order) {
+            return payerNames.indexOf(order.tab_name) === -1;
+        });
+        barNames = barNames.filter(function(n) {
+            return payerNames.indexOf(n) === -1;
+        });
 
         const { error: tableError } = await db
             .from("game_tables")
@@ -978,6 +1036,443 @@ startTableGameButton.addEventListener(
             tableElement
         );
     });
+
+    renderBarNames();
+}
+
+/* =========================
+   LOAD PRODUCTS / TAB ORDERS
+========================= */
+
+async function loadProducts() {
+    const { data, error } = await db
+        .from("products")
+        .select("*")
+        .order("created_at", { ascending: true });
+
+    if (error) {
+        console.error("Load products error:", error);
+        alert("שגיאה בטעינת רשימת המוצרים");
+        return;
+    }
+
+    products = data || [];
+}
+
+async function loadTabOrders() {
+    const { data, error } = await db
+        .from("tab_orders")
+        .select("*")
+        .order("created_at", { ascending: true });
+
+    if (error) {
+        console.error("Load tab orders error:", error);
+        alert("שגיאה בטעינת ההזמנות הפתוחות");
+        return;
+    }
+
+    tabOrders = data || [];
+    renderBarNames();
+}
+
+/* =========================
+   BAR TABS (CUSTOMERS)
+========================= */
+
+function getTabOrdersForName(name) {
+    return tabOrders.filter(function(order) {
+        return order.tab_name === name;
+    });
+}
+
+function getTabTotal(name) {
+    return getTabOrdersForName(name).reduce(function(sum, order) {
+        return sum + Number(order.price || 0);
+    }, 0);
+}
+
+function isActiveTablePlayer(name) {
+    return gameTables.some(function(table) {
+        return (table.table_players || []).some(function(player) {
+            return player.player_name === name;
+        });
+    });
+}
+
+function getAllBarNames() {
+    const names = new Set(barNames);
+
+    gameTables.forEach(function(table) {
+        (table.table_players || []).forEach(function(player) {
+            names.add(player.player_name);
+        });
+    });
+
+    tabOrders.forEach(function(order) {
+        names.add(order.tab_name);
+    });
+
+    return Array.from(names);
+}
+
+function renderBarNames() {
+    barNamesList.innerHTML = "";
+
+    const names = getAllBarNames();
+
+    if (names.length === 0) {
+        const empty = document.createElement("div");
+        empty.style.cssText = "color:#9ca3af;";
+        empty.textContent = "אין לקוחות כרגע";
+        barNamesList.appendChild(empty);
+        return;
+    }
+
+    names.forEach(function(name) {
+        const wrapper = document.createElement("div");
+        wrapper.style.cssText = "display:flex;align-items:center;gap:4px;";
+
+        const total = getTabTotal(name);
+
+        const nameBtn = document.createElement("button");
+        nameBtn.type = "button";
+        nameBtn.textContent =
+            "👤 " + name +
+            (total > 0 ? " (" + total.toFixed(2) + " ₪)" : "");
+        nameBtn.style.cssText =
+            "padding:10px 14px;background:#2563eb;color:white;font-weight:bold;";
+        nameBtn.addEventListener("click", function() {
+            openTabModal(name);
+        });
+        wrapper.appendChild(nameBtn);
+
+        if (total === 0 && !isActiveTablePlayer(name)) {
+            const removeBtn = document.createElement("button");
+            removeBtn.type = "button";
+            removeBtn.textContent = "✕";
+            removeBtn.style.cssText = "padding:10px;background:#4b5563;color:white;";
+            removeBtn.addEventListener("click", function() {
+                barNames = barNames.filter(function(n) { return n !== name; });
+                renderBarNames();
+            });
+            wrapper.appendChild(removeBtn);
+        }
+
+        barNamesList.appendChild(wrapper);
+    });
+}
+
+addBarNameBtn.addEventListener("click", function() {
+    const name = prompt("שם הלקוח:");
+    if (!name) return;
+
+    const trimmed = name.trim();
+    if (!trimmed) return;
+
+    if (getAllBarNames().indexOf(trimmed) === -1) {
+        barNames.push(trimmed);
+    }
+
+    renderBarNames();
+});
+
+function openTabModal(name) {
+    let activeCategory = PRODUCT_CATEGORIES[0].key;
+
+    const overlay = document.createElement("div");
+    overlay.style.cssText =
+        "position:fixed;inset:0;background:rgba(0,0,0,.65);" +
+        "display:flex;align-items:center;justify-content:center;" +
+        "z-index:1000;padding:20px;";
+
+    const box = document.createElement("div");
+    box.style.cssText =
+        "background:#1f2937;border:1px solid #374151;border-radius:12px;" +
+        "padding:22px;max-width:420px;width:100%;max-height:85vh;overflow-y:auto;";
+
+    const title = document.createElement("div");
+    title.style.cssText = "font-size:18px;font-weight:bold;margin-bottom:15px;text-align:center;";
+    title.textContent = "👤 " + name;
+    box.appendChild(title);
+
+    const itemsList = document.createElement("div");
+    itemsList.style.cssText = "margin-bottom:10px;";
+    box.appendChild(itemsList);
+
+    const totalLine = document.createElement("div");
+    totalLine.style.cssText =
+        "text-align:center;color:#4ade80;font-weight:bold;font-size:17px;margin-bottom:18px;";
+    box.appendChild(totalLine);
+
+    const tabsRow = document.createElement("div");
+    tabsRow.style.cssText = "display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:15px;";
+    box.appendChild(tabsRow);
+
+    const productsGrid = document.createElement("div");
+    productsGrid.style.cssText = "display:flex;flex-direction:column;gap:8px;margin-bottom:15px;";
+    box.appendChild(productsGrid);
+
+    const addProductRow = document.createElement("div");
+    addProductRow.style.cssText = "display:grid;grid-template-columns:1fr 90px auto;gap:8px;margin-bottom:20px;";
+    box.appendChild(addProductRow);
+
+    function renderItems() {
+        itemsList.innerHTML = "";
+        const orders = getTabOrdersForName(name);
+
+        if (orders.length === 0) {
+            const empty = document.createElement("div");
+            empty.style.cssText = "color:#9ca3af;text-align:center;margin-bottom:10px;";
+            empty.textContent = "אין הזמנות עדיין";
+            itemsList.appendChild(empty);
+        } else {
+            orders.forEach(function(order) {
+                const row = document.createElement("div");
+                row.style.cssText =
+                    "display:flex;justify-content:space-between;align-items:center;" +
+                    "gap:10px;background:#111827;padding:8px 10px;border-radius:7px;margin-bottom:6px;";
+
+                const text = document.createElement("span");
+                text.textContent =
+                    order.product_name + " — " + Number(order.price).toFixed(2) + " ₪";
+
+                const removeBtn = document.createElement("button");
+                removeBtn.type = "button";
+                removeBtn.textContent = "מחק";
+                removeBtn.style.cssText = "background:#7f1d1d;color:white;padding:6px 10px;";
+                removeBtn.addEventListener("click", async function() {
+                    removeBtn.disabled = true;
+                    const { error } = await db
+                        .from("tab_orders")
+                        .delete()
+                        .eq("id", order.id);
+
+                    if (error) {
+                        console.error("Remove tab order error:", error);
+                        alert("שגיאה במחיקת ההזמנה");
+                        removeBtn.disabled = false;
+                        return;
+                    }
+
+                    tabOrders = tabOrders.filter(function(o) {
+                        return o.id !== order.id;
+                    });
+
+                    renderItems();
+                    renderBarNames();
+                });
+
+                row.appendChild(text);
+                row.appendChild(removeBtn);
+                itemsList.appendChild(row);
+            });
+        }
+
+        totalLine.textContent = 'סה"כ: ' + getTabTotal(name).toFixed(2) + " ₪";
+    }
+
+    function renderProducts() {
+        productsGrid.innerHTML = "";
+        const items = products.filter(function(product) {
+            return product.category === activeCategory;
+        });
+
+        if (items.length === 0) {
+            const empty = document.createElement("div");
+            empty.style.cssText = "color:#9ca3af;text-align:center;";
+            empty.textContent = "אין עדיין מוצרים בקטגוריה הזו";
+            productsGrid.appendChild(empty);
+        }
+
+        items.forEach(function(product) {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.textContent = product.name + " — " + Number(product.price).toFixed(2) + " ₪";
+            btn.style.cssText = "padding:12px;background:#2563eb;color:white;font-weight:bold;";
+            btn.addEventListener("click", async function() {
+                btn.disabled = true;
+                const { data, error } = await db
+                    .from("tab_orders")
+                    .insert({
+                        tab_name: name,
+                        category: activeCategory,
+                        product_name: product.name,
+                        price: Number(product.price)
+                    })
+                    .select()
+                    .single();
+                btn.disabled = false;
+
+                if (error) {
+                    console.error("Add tab order error:", error);
+                    alert("שגיאה בהוספת ההזמנה");
+                    return;
+                }
+
+                tabOrders.push(data);
+                renderItems();
+                renderBarNames();
+            });
+            productsGrid.appendChild(btn);
+        });
+    }
+
+    function renderTabs() {
+        tabsRow.innerHTML = "";
+        PRODUCT_CATEGORIES.forEach(function(category) {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.textContent = category.label;
+            btn.style.cssText =
+                "padding:10px 4px;font-size:13px;font-weight:bold;color:white;" +
+                (category.key === activeCategory ? "background:#2563eb;" : "background:#374151;");
+            btn.addEventListener("click", function() {
+                activeCategory = category.key;
+                renderTabs();
+                renderProducts();
+            });
+            tabsRow.appendChild(btn);
+        });
+    }
+
+    const productNameInput = document.createElement("input");
+    productNameInput.type = "text";
+    productNameInput.placeholder = "מוצר חדש";
+
+    const productPriceInput = document.createElement("input");
+    productPriceInput.type = "number";
+    productPriceInput.min = "0";
+    productPriceInput.step = "0.5";
+    productPriceInput.placeholder = "מחיר";
+
+    const addProductBtn = document.createElement("button");
+    addProductBtn.type = "button";
+    addProductBtn.textContent = "+ הוסף לתפריט";
+    addProductBtn.style.cssText = "background:#16a34a;color:white;padding:10px 12px;font-weight:bold;";
+    addProductBtn.addEventListener("click", async function() {
+        const productName = productNameInput.value.trim();
+        const price = Number(productPriceInput.value);
+
+        if (!productName) {
+            alert("יש להזין שם מוצר");
+            return;
+        }
+
+        if (!Number.isFinite(price) || price < 0) {
+            alert("יש להזין מחיר תקין");
+            return;
+        }
+
+        addProductBtn.disabled = true;
+        const { data, error } = await db
+            .from("products")
+            .insert({
+                category: activeCategory,
+                name: productName,
+                price: price
+            })
+            .select()
+            .single();
+        addProductBtn.disabled = false;
+
+        if (error) {
+            console.error("Add product error:", error);
+            alert("שגיאה בהוספת המוצר");
+            return;
+        }
+
+        products.push(data);
+        productNameInput.value = "";
+        productPriceInput.value = "";
+        renderProducts();
+    });
+
+    addProductRow.appendChild(productNameInput);
+    addProductRow.appendChild(productPriceInput);
+    addProductRow.appendChild(addProductBtn);
+
+    const closeTabBtn = document.createElement("button");
+    closeTabBtn.type = "button";
+    closeTabBtn.textContent = "✓ סגור חשבון";
+    closeTabBtn.style.cssText =
+        "width:100%;padding:13px;margin-bottom:10px;" +
+        "background:#f59e0b;color:#111827;font-weight:bold;font-size:16px;";
+    closeTabBtn.addEventListener("click", async function() {
+        const total = getTabTotal(name);
+
+        if (total <= 0) {
+            alert("אין הזמנות לחשבון הזה");
+            return;
+        }
+
+        const confirmed = confirm(
+            "לסגור את החשבון של " + name + " על סך " + total.toFixed(2) + " ₪?"
+        );
+        if (!confirmed) return;
+
+        closeTabBtn.disabled = true;
+        closeTabBtn.textContent = "סוגר חשבון...";
+
+        const { error: saleError } = await db
+            .from("sales")
+            .insert({
+                customer_name: name,
+                hourly_price: 0,
+                elapsed_seconds: 0,
+                game_cost: 0,
+                orders_cost: Number(total.toFixed(2)),
+                total_amount: Number(total.toFixed(2)),
+                closed_at: new Date().toISOString()
+            });
+
+        if (saleError) {
+            console.error("Close tab error:", saleError);
+            alert("שגיאה בשמירת החשבון");
+            closeTabBtn.disabled = false;
+            closeTabBtn.textContent = "✓ סגור חשבון";
+            return;
+        }
+
+        const { error: deleteError } = await db
+            .from("tab_orders")
+            .delete()
+            .eq("tab_name", name);
+
+        if (deleteError) {
+            console.error("Clear tab orders error:", deleteError);
+        }
+
+        tabOrders = tabOrders.filter(function(order) {
+            return order.tab_name !== name;
+        });
+        barNames = barNames.filter(function(n) {
+            return n !== name;
+        });
+
+        overlay.remove();
+        renderBarNames();
+    });
+
+    const closeModalBtn = document.createElement("button");
+    closeModalBtn.type = "button";
+    closeModalBtn.textContent = "סגור חלון";
+    closeModalBtn.style.cssText = "width:100%;padding:11px;background:#4b5563;color:white;";
+    closeModalBtn.addEventListener("click", function() {
+        overlay.remove();
+    });
+
+    box.appendChild(closeTabBtn);
+    box.appendChild(closeModalBtn);
+
+    overlay.appendChild(box);
+    overlay.addEventListener("click", function(event) {
+        if (event.target === overlay) overlay.remove();
+    });
+    document.body.appendChild(overlay);
+
+    renderTabs();
+    renderProducts();
+    renderItems();
 }
 
 /* =========================
@@ -1044,6 +1539,8 @@ async function login() {
 
 
     await loadGameTables();
+    await loadProducts();
+    await loadTabOrders();
 
     loginBtn.disabled = false;
 
@@ -1088,6 +1585,8 @@ async function checkLogin() {
 
 
         await loadGameTables();
+        await loadProducts();
+        await loadTabOrders();
     } else {
 
         loginScreen.style.display =
@@ -1723,6 +2222,11 @@ logoutBtn.addEventListener(
         gameTables = [];
         gameTableDisplays.clear();
         gameTablesList.innerHTML = "";
+
+        products = [];
+        tabOrders = [];
+        barNames = [];
+        barNamesList.innerHTML = "";
 
         salesHistory.innerHTML = "";
 
