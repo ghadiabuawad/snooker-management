@@ -484,21 +484,72 @@ function renderGameTables() {
 
         tableElement.className = "customer";
 
+        /* שמות השחקנים */
+        const players =
+            (table.table_players || [])
+                .sort(function(a, b) {
+                    return Number(a.position) - Number(b.position);
+                });
+
+        let playersText = "אין שחקנים";
+
+        if (players.length > 0) {
+            playersText =
+                players
+                    .map(function(player) {
+                        return player.player_name;
+                    })
+                    .join(" • ");
+        }
+
+        /* שעת התחלה */
+        let startTimeText = "--:--";
+
+        if (table.started_at) {
+
+            const startDate =
+                new Date(table.started_at);
+
+            startTimeText =
+                startDate.toLocaleTimeString(
+                    "he-IL",
+                    {
+                        hour: "2-digit",
+                        minute: "2-digit"
+                    }
+                );
+        }
+
         tableElement.innerHTML = `
             <div class="customer-header">
+
                 <div>
+
                     <div class="customer-name">
                         🎱 שולחן ${table.table_number}
                     </div>
 
-                    <div class="status">
-                        עד 4 שחקנים
+                    <div
+                        style="
+                            margin-top:8px;
+                            font-size:16px;
+                        "
+                    >
+                        👤 ${playersText}
                     </div>
+
+                    <div
+                        style="
+                            margin-top:7px;
+                            color:#9ca3af;
+                            font-size:14px;
+                        "
+                    >
+                        🕐 שעת התחלה: ${startTimeText}
+                    </div>
+
                 </div>
 
-                <div>
-                    ${Number(table.hourly_price).toFixed(0)} ₪ / שעה
-                </div>
             </div>
         `;
 
