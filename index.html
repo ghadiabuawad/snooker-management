@@ -947,23 +947,7 @@ checkLogin();
 /* =========================
    TIME
 ========================= */
-function getGameTableElapsedSeconds(table) {
 
-    let seconds =
-        Number(table.elapsed_seconds || 0);
-
-    if (table.running && table.started_at) {
-
-        seconds += Math.floor(
-            (
-                Date.now() -
-                new Date(table.started_at).getTime()
-            ) / 1000
-        );
-    }
-
-    return Math.max(0, seconds);
-}
     
 function formatTime(totalSeconds) {
 
