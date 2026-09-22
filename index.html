@@ -602,6 +602,24 @@ tableElement.addEventListener(
     `;
 
     tableElement.appendChild(details);
+
+     const gameTableTimer =
+    details.querySelector(".game-table-timer");
+
+function updateGameTableTimer() {
+
+    gameTableTimer.textContent =
+        formatTime(
+            getGameTableElapsedSeconds(table)
+        );
+}
+
+updateGameTableTimer();
+
+setInterval(
+    updateGameTableTimer,
+    1000
+);        
              
     const activePlayersContainer =
     details.querySelector(".active-table-players");
