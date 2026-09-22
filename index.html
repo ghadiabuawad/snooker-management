@@ -31,11 +31,6 @@ header p{color:#9ca3af;margin-top:6px}
     margin:35px auto
 }
 
-.add-customer{
-    display:flex;
-    gap:10px;
-    margin-bottom:30px
-}
 
 input{
     padding:12px;
@@ -44,7 +39,6 @@ input{
     font-size:16px
 }
 
-.add-customer input{flex:1}
 
 button{
     border:none;
@@ -53,11 +47,6 @@ button{
     font-size:15px
 }
 
-.add-customer button{
-    padding:12px 20px;
-    background:#16a34a;
-    color:white
-}
 
 .section-title{margin-bottom:15px}
 
@@ -245,7 +234,6 @@ button:disabled{
 .table-debt{background:#dc2626;color:white}
 
 @media(max-width:600px){
-    .add-customer,
     .buttons{
         flex-direction:column
     }
@@ -352,18 +340,6 @@ button:disabled{
 
 <div class="container">
 
-    <div class="add-customer">
-        <input
-            id="customerName"
-            type="text"
-            placeholder="שם הלקוח"
-            autocomplete="off"
-        >
-
-        <button id="addCustomerBtn">
-            + הוסף לקוח
-        </button>
-    </div>
   <h2 class="section-title">🎱 שולחנות משחק</h2>
 
   <div id="gameTablesList"></div>
@@ -441,12 +417,6 @@ const loginError = document.getElementById("loginError");
 const ADMIN_EMAIL = "ghadiabo@gmail.com";
 
 const DEFAULT_HOURLY_PRICE = 40;
-
-const customerNameInput =
-    document.getElementById("customerName");
-
-const addCustomerBtn =
-    document.getElementById("addCustomerBtn");
 
 const customersList =
     document.getElementById("customersList");
@@ -1314,133 +1284,6 @@ async function saveCustomer(customer) {
 
 
     return true;
-}
-
-
-/* =========================
-   ADD CUSTOMER
-========================= */
-
-async function addCustomer() {
-
-    const name =
-        customerNameInput
-            .value
-            .trim();
-
-
-    if (!name) {
-
-        alert(
-            "יש להזין שם לקוח"
-        );
-
-        return;
-    }
-
-
-    addCustomerBtn.disabled =
-        true;
-
-
-    const { data, error } =
-        await db
-
-            .from("active_sessions")
-
-            .insert({
-
-                customer_name:
-                    name,
-
-                hourly_price:
-                    DEFAULT_HOURLY_PRICE,
-
-                elapsed_seconds:
-                    0,
-
-                running:
-                    false,
-
-                started_at:
-                    null,
-
-                updated_at:
-                    new Date().toISOString()
-
-            })
-
-            .select()
-
-            .single();
-
-
-    addCustomerBtn.disabled =
-        false;
-
-
-    if (error) {
-
-        console.error(
-            "Add customer error:",
-            error
-        );
-
-        alert(
-            "שגיאה בהוספת הלקוח"
-        );
-
-        return;
-    }
-
-
-    customers.push({
-
-        id:
-            data.id,
-
-        name:
-            data.customer_name,
-
-        hourlyPrice:
-            Number(
-                data.hourly_price ??
-                DEFAULT_HOURLY_PRICE
-            ),
-
-        elapsedSeconds:
-            Number(
-                data.elapsed_seconds ??
-                0
-            ),
-
-        running:
-            Boolean(
-                data.running
-            ),
-
-        startedAt:
-            data.started_at
-                ? new Date(
-                    data.started_at
-                ).getTime()
-                : null,
-
-        orders: [],
-
-        open: false
-
-    });
-
-
-    customerNameInput.value =
-        "";
-
-
-    renderCustomers();
-
-
-    customerNameInput.focus();
 }
 
 
@@ -2690,34 +2533,6 @@ resetTimeButton.addEventListener(
     );
 
 }
-
-
-/* =========================
-   ADD CUSTOMER EVENTS
-========================= */
-
-addCustomerBtn.addEventListener(
-    "click",
-    addCustomer
-);
-
-
-customerNameInput.addEventListener(
-
-    "keydown",
-
-    function(event) {
-
-        if (
-            event.key === "Enter"
-        ) {
-
-            addCustomer();
-
-        }
-
-    }
-);
 
 
 /* =========================
