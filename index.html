@@ -602,7 +602,32 @@ tableElement.addEventListener(
     `;
 
     tableElement.appendChild(details);
+             
+    const activePlayersContainer =
+    details.querySelector(".active-table-players");
 
+players.forEach(function(player) {
+
+    const playerButton =
+        document.createElement("button");
+
+    playerButton.textContent =
+        "👤 " + player.player_name;
+
+    playerButton.style.cssText = `
+        padding:12px 18px;
+        margin:5px;
+        background:#2563eb;
+        color:white;
+        font-weight:bold;
+        font-size:16px;
+    `;
+
+    activePlayersContainer.appendChild(
+        playerButton
+    );
+});
+             
     return;
 }
         
