@@ -483,7 +483,8 @@ function renderGameTables() {
             document.createElement("div");
 
         tableElement.className = "customer";
-
+        tableElement.style.cursor = "pointer";
+        
         /* שמות השחקנים */
         const players =
             (table.table_players || [])
@@ -553,6 +554,65 @@ function renderGameTables() {
             </div>
         `;
 
+tableElement.addEventListener(
+    "click",
+    function() {
+
+        const existingDetails =
+            tableElement.querySelector(
+                ".game-table-details"
+            );
+
+        if (existingDetails) {
+            existingDetails.remove();
+            return;
+        }
+
+        const details =
+            document.createElement("div");
+
+        details.className =
+            "game-table-details";
+
+        details.style.marginTop = "18px";
+        details.style.paddingTop = "18px";
+        details.style.borderTop =
+            "1px solid #374151";
+
+        details.innerHTML = `
+            <div style="font-weight:bold; margin-bottom:12px;">
+                שחקנים
+            </div>
+
+            <input
+                type="text"
+                placeholder="שם שחקן 1"
+                class="table-player-input"
+            >
+
+            <input
+                type="text"
+                placeholder="שם שחקן 2"
+                class="table-player-input"
+            >
+
+            <input
+                type="text"
+                placeholder="שם שחקן 3"
+                class="table-player-input"
+            >
+
+            <input
+                type="text"
+                placeholder="שם שחקן 4"
+                class="table-player-input"
+            >
+        `;
+
+        tableElement.appendChild(details);
+    }
+);
+         
         gameTablesList.appendChild(
             tableElement
         );
