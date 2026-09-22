@@ -1807,6 +1807,88 @@ function openRemoveProductModal() {
     renderList();
 }
 
+function openHourlyPriceModal() {
+    const currentPrice = gameTables.length > 0 ? Number(gameTables[0].hourly_price || 0) : 0;
+
+    const overlay = document.createElement("div");
+    overlay.style.cssText =
+        "position:fixed;inset:0;background:rgba(0,0,0,.65);" +
+        "display:flex;align-items:center;justify-content:center;" +
+        "z-index:1600;padding:20px;";
+
+    const box = document.createElement("div");
+    box.style.cssText =
+        "background:#1f2937;border:1px solid #374151;border-radius:12px;" +
+        "padding:22px;max-width:320px;width:100%;text-align:center;";
+
+    const title = document.createElement("div");
+    title.style.cssText = "font-size:18px;font-weight:bold;margin-bottom:15px;";
+    title.textContent = "💰 מחיר לשעת סנוקר";
+    box.appendChild(title);
+
+    const priceInput = document.createElement("input");
+    priceInput.type = "number";
+    priceInput.min = "0";
+    priceInput.step = "1";
+    priceInput.value = currentPrice;
+    priceInput.style.cssText = "width:100%;margin-bottom:15px;text-align:center;font-size:18px;";
+    box.appendChild(priceInput);
+
+    const saveBtn = document.createElement("button");
+    saveBtn.type = "button";
+    saveBtn.textContent = "✓ שמור";
+    saveBtn.style.cssText =
+        "width:100%;padding:13px;margin-bottom:10px;" +
+        "background:#16a34a;color:white;font-weight:bold;font-size:16px;";
+    saveBtn.addEventListener("click", async function() {
+        const newPrice = Number(priceInput.value);
+
+        if (!Number.isFinite(newPrice) || newPrice < 0) {
+            alert("יש להזין מחיר תקין");
+            return;
+        }
+
+        if (gameTables.length === 0) {
+            overlay.remove();
+            return;
+        }
+
+        saveBtn.disabled = true;
+        saveBtn.textContent = "שומר...";
+
+        const { error } = await db
+            .from("game_tables")
+            .update({ hourly_price: newPrice })
+            .in("id", gameTables.map(function(t) { return t.id; }));
+
+        if (error) {
+            console.error("Update hourly price error:", error);
+            alert("שגיאה בעדכון המחיר: " + error.message);
+            saveBtn.disabled = false;
+            saveBtn.textContent = "✓ שמור";
+            return;
+        }
+
+        gameTables.forEach(function(t) { t.hourly_price = newPrice; });
+        overlay.remove();
+        renderGameTables();
+    });
+    box.appendChild(saveBtn);
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.type = "button";
+    cancelBtn.textContent = "ביטול";
+    cancelBtn.style.cssText = "width:100%;padding:11px;background:#4b5563;color:white;";
+    cancelBtn.addEventListener("click", function() { overlay.remove(); });
+    box.appendChild(cancelBtn);
+
+    overlay.appendChild(box);
+    overlay.addEventListener("click", function(event) {
+        if (event.target === overlay) overlay.remove();
+    });
+    document.body.appendChild(overlay);
+}
+
 function openSettingsModal() {
     const overlay = document.createElement("div");
     overlay.style.cssText =
@@ -1838,6 +1920,7 @@ function openSettingsModal() {
         box.appendChild(btn);
     }
 
+    addOption("💰 מחיר לשעת סנוקר", "#2563eb", openHourlyPriceModal);
     addOption("+ הוסף לתפריט", "#16a34a", openAddProductModal);
     addOption("- הסר מהתפריט", "#7f1d1d", openRemoveProductModal);
     addOption("🚪 התנתק", "#dc2626", handleLogout);
