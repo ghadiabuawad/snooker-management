@@ -247,6 +247,45 @@ button:disabled{
         + הוסף שם
     </button>
 
+    <div style="
+        display:grid;
+        grid-template-columns:repeat(2,1fr);
+        gap:10px;
+        margin-top:15px;
+        padding-top:15px;
+        border-top:1px solid #374151;
+    ">
+
+        <button
+            id="addProductToMenuBtn"
+            type="button"
+            style="
+                padding:12px;
+                background:#16a34a;
+                color:white;
+                font-weight:bold;
+                font-size:14px;
+            "
+        >
+            + הוסף לתפריט
+        </button>
+
+        <button
+            id="removeProductFromMenuBtn"
+            type="button"
+            style="
+                padding:12px;
+                background:#7f1d1d;
+                color:white;
+                font-weight:bold;
+                font-size:14px;
+            "
+        >
+            - הסר מהתפריט
+        </button>
+
+    </div>
+
 </div>
 
 <div style="
@@ -1209,12 +1248,8 @@ function openTabModal(name) {
     box.appendChild(tabsRow);
 
     const productsGrid = document.createElement("div");
-    productsGrid.style.cssText = "display:flex;flex-direction:column;gap:8px;margin-bottom:15px;";
+    productsGrid.style.cssText = "display:flex;flex-direction:column;gap:8px;margin-bottom:20px;";
     box.appendChild(productsGrid);
-
-    const addProductRow = document.createElement("div");
-    addProductRow.style.cssText = "display:grid;grid-template-columns:1fr 90px auto;gap:8px;margin-bottom:20px;";
-    box.appendChild(addProductRow);
 
     function renderItems() {
         itemsList.innerHTML = "";
@@ -1335,62 +1370,6 @@ function openTabModal(name) {
         });
     }
 
-    const productNameInput = document.createElement("input");
-    productNameInput.type = "text";
-    productNameInput.placeholder = "מוצר חדש";
-
-    const productPriceInput = document.createElement("input");
-    productPriceInput.type = "number";
-    productPriceInput.min = "0";
-    productPriceInput.step = "0.5";
-    productPriceInput.placeholder = "מחיר";
-
-    const addProductBtn = document.createElement("button");
-    addProductBtn.type = "button";
-    addProductBtn.textContent = "+ הוסף לתפריט";
-    addProductBtn.style.cssText = "background:#16a34a;color:white;padding:10px 12px;font-weight:bold;";
-    addProductBtn.addEventListener("click", async function() {
-        const productName = productNameInput.value.trim();
-        const price = Number(productPriceInput.value);
-
-        if (!productName) {
-            alert("יש להזין שם מוצר");
-            return;
-        }
-
-        if (!Number.isFinite(price) || price < 0) {
-            alert("יש להזין מחיר תקין");
-            return;
-        }
-
-        addProductBtn.disabled = true;
-        const { data, error } = await db
-            .from("products")
-            .insert({
-                category: activeCategory,
-                name: productName,
-                price: price
-            })
-            .select()
-            .single();
-        addProductBtn.disabled = false;
-
-        if (error) {
-            console.error("Add product error:", error);
-            alert("שגיאה בהוספת המוצר: " + error.message);
-            return;
-        }
-
-        products.push(data);
-        productNameInput.value = "";
-        productPriceInput.value = "";
-        renderProducts();
-    });
-
-    addProductRow.appendChild(productNameInput);
-    addProductRow.appendChild(productPriceInput);
-    addProductRow.appendChild(addProductBtn);
-
     const closeTabBtn = document.createElement("button");
     closeTabBtn.type = "button";
     closeTabBtn.textContent = "✓ סגור חשבון";
@@ -1474,6 +1453,257 @@ function openTabModal(name) {
     renderProducts();
     renderItems();
 }
+
+/* =========================
+   MENU MANAGEMENT (PRODUCTS)
+========================= */
+
+function buildMenuModalShell(titleText) {
+    const overlay = document.createElement("div");
+    overlay.style.cssText =
+        "position:fixed;inset:0;background:rgba(0,0,0,.65);" +
+        "display:flex;align-items:center;justify-content:center;" +
+        "z-index:1000;padding:20px;";
+
+    const box = document.createElement("div");
+    box.style.cssText =
+        "background:#1f2937;border:1px solid #374151;border-radius:12px;" +
+        "padding:22px;max-width:420px;width:100%;max-height:85vh;overflow-y:auto;";
+
+    const title = document.createElement("div");
+    title.style.cssText = "font-size:18px;font-weight:bold;margin-bottom:15px;text-align:center;";
+    title.textContent = titleText;
+    box.appendChild(title);
+
+    const tabsRow = document.createElement("div");
+    tabsRow.style.cssText = "display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:15px;";
+    box.appendChild(tabsRow);
+
+    overlay.appendChild(box);
+    overlay.addEventListener("click", function(event) {
+        if (event.target === overlay) overlay.remove();
+    });
+
+    return { overlay: overlay, box: box, tabsRow: tabsRow };
+}
+
+function addCategoryTabs(tabsRow, getActiveCategory, onSelect) {
+    function render() {
+        tabsRow.innerHTML = "";
+        PRODUCT_CATEGORIES.forEach(function(category) {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.textContent = category.label;
+            btn.style.cssText =
+                "padding:10px 4px;font-size:13px;font-weight:bold;color:white;" +
+                (category.key === getActiveCategory() ? "background:#2563eb;" : "background:#374151;");
+            btn.addEventListener("click", function() {
+                onSelect(category.key);
+                render();
+            });
+            tabsRow.appendChild(btn);
+        });
+    }
+    render();
+    return render;
+}
+
+function openAddProductModal() {
+    let activeCategory = PRODUCT_CATEGORIES[0].key;
+
+    const shell = buildMenuModalShell("➕ הוספת מוצר לתפריט");
+
+    const list = document.createElement("div");
+    list.style.cssText = "margin-bottom:15px;";
+    shell.box.appendChild(list);
+
+    const formRow = document.createElement("div");
+    formRow.style.cssText = "display:grid;grid-template-columns:1fr 90px auto;gap:8px;margin-bottom:20px;";
+    shell.box.appendChild(formRow);
+
+    function renderList() {
+        list.innerHTML = "";
+        const items = products.filter(function(product) {
+            return product.category === activeCategory;
+        });
+
+        if (items.length === 0) {
+            const empty = document.createElement("div");
+            empty.style.cssText = "color:#9ca3af;text-align:center;";
+            empty.textContent = "אין עדיין מוצרים בקטגוריה הזו";
+            list.appendChild(empty);
+            return;
+        }
+
+        items.forEach(function(product) {
+            const row = document.createElement("div");
+            row.style.cssText =
+                "background:#111827;padding:8px 10px;border-radius:7px;margin-bottom:6px;";
+            row.textContent = product.name + " — " + Number(product.price).toFixed(2) + " ₪";
+            list.appendChild(row);
+        });
+    }
+
+    addCategoryTabs(shell.tabsRow, function() { return activeCategory; }, function(key) {
+        activeCategory = key;
+        renderList();
+    });
+
+    const nameInput = document.createElement("input");
+    nameInput.type = "text";
+    nameInput.placeholder = "מוצר חדש";
+
+    const priceInput = document.createElement("input");
+    priceInput.type = "number";
+    priceInput.min = "0";
+    priceInput.step = "0.5";
+    priceInput.placeholder = "מחיר";
+
+    const addBtn = document.createElement("button");
+    addBtn.type = "button";
+    addBtn.textContent = "+ הוסף";
+    addBtn.style.cssText = "background:#16a34a;color:white;padding:10px 12px;font-weight:bold;";
+    addBtn.addEventListener("click", async function() {
+        const productName = nameInput.value.trim();
+        const price = Number(priceInput.value);
+
+        if (!productName) {
+            alert("יש להזין שם מוצר");
+            return;
+        }
+
+        if (!Number.isFinite(price) || price < 0) {
+            alert("יש להזין מחיר תקין");
+            return;
+        }
+
+        addBtn.disabled = true;
+        const { data, error } = await db
+            .from("products")
+            .insert({
+                category: activeCategory,
+                name: productName,
+                price: price
+            })
+            .select()
+            .single();
+        addBtn.disabled = false;
+
+        if (error) {
+            console.error("Add product error:", error);
+            alert("שגיאה בהוספת המוצר: " + error.message);
+            return;
+        }
+
+        products.push(data);
+        nameInput.value = "";
+        priceInput.value = "";
+        renderList();
+        nameInput.focus();
+    });
+
+    formRow.appendChild(nameInput);
+    formRow.appendChild(priceInput);
+    formRow.appendChild(addBtn);
+
+    const closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.textContent = "סגור";
+    closeBtn.style.cssText = "width:100%;padding:11px;background:#4b5563;color:white;";
+    closeBtn.addEventListener("click", function() {
+        shell.overlay.remove();
+    });
+    shell.box.appendChild(closeBtn);
+
+    document.body.appendChild(shell.overlay);
+    renderList();
+}
+
+function openRemoveProductModal() {
+    let activeCategory = PRODUCT_CATEGORIES[0].key;
+
+    const shell = buildMenuModalShell("🗑 הסרת מוצר מהתפריט");
+
+    const list = document.createElement("div");
+    list.style.cssText = "margin-bottom:20px;";
+    shell.box.appendChild(list);
+
+    function renderList() {
+        list.innerHTML = "";
+        const items = products.filter(function(product) {
+            return product.category === activeCategory;
+        });
+
+        if (items.length === 0) {
+            const empty = document.createElement("div");
+            empty.style.cssText = "color:#9ca3af;text-align:center;";
+            empty.textContent = "אין מוצרים בקטגוריה הזו";
+            list.appendChild(empty);
+            return;
+        }
+
+        items.forEach(function(product) {
+            const row = document.createElement("div");
+            row.style.cssText =
+                "display:flex;justify-content:space-between;align-items:center;" +
+                "gap:10px;background:#111827;padding:8px 10px;border-radius:7px;margin-bottom:6px;";
+
+            const text = document.createElement("span");
+            text.textContent = product.name + " — " + Number(product.price).toFixed(2) + " ₪";
+
+            const deleteBtn = document.createElement("button");
+            deleteBtn.type = "button";
+            deleteBtn.textContent = "מחק";
+            deleteBtn.style.cssText = "background:#7f1d1d;color:white;padding:6px 10px;";
+            deleteBtn.addEventListener("click", async function() {
+                const confirmed = confirm("להסיר את \"" + product.name + "\" מהתפריט?");
+                if (!confirmed) return;
+
+                deleteBtn.disabled = true;
+                const { error } = await db
+                    .from("products")
+                    .delete()
+                    .eq("id", product.id);
+
+                if (error) {
+                    console.error("Delete product error:", error);
+                    alert("שגיאה בהסרת המוצר: " + error.message);
+                    deleteBtn.disabled = false;
+                    return;
+                }
+
+                products = products.filter(function(p) {
+                    return p.id !== product.id;
+                });
+                renderList();
+            });
+
+            row.appendChild(text);
+            row.appendChild(deleteBtn);
+            list.appendChild(row);
+        });
+    }
+
+    addCategoryTabs(shell.tabsRow, function() { return activeCategory; }, function(key) {
+        activeCategory = key;
+        renderList();
+    });
+
+    const closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.textContent = "סגור";
+    closeBtn.style.cssText = "width:100%;padding:11px;background:#4b5563;color:white;";
+    closeBtn.addEventListener("click", function() {
+        shell.overlay.remove();
+    });
+    shell.box.appendChild(closeBtn);
+
+    document.body.appendChild(shell.overlay);
+    renderList();
+}
+
+document.getElementById("addProductToMenuBtn").addEventListener("click", openAddProductModal);
+document.getElementById("removeProductFromMenuBtn").addEventListener("click", openRemoveProductModal);
 
 /* =========================
    LOGIN
