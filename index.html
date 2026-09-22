@@ -347,31 +347,77 @@ function askWhoPays(playerNames) {
             "padding:24px;max-width:360px;width:100%;text-align:center;";
 
         const title = document.createElement("div");
-        title.style.cssText = "font-size:18px;font-weight:bold;margin-bottom:18px;";
+        title.style.cssText = "font-size:18px;font-weight:bold;margin-bottom:6px;";
         title.textContent = "מי משלם?";
         box.appendChild(title);
 
+        const subtitle = document.createElement("div");
+        subtitle.style.cssText = "color:#9ca3af;font-size:13px;margin-bottom:16px;";
+        subtitle.textContent = "אפשר לבחור כמה שחקנים - הסכום יתחלק ביניהם בשווה";
+        box.appendChild(subtitle);
+
         const list = document.createElement("div");
         list.style.cssText = "display:flex;flex-direction:column;gap:10px;margin-bottom:15px;";
+
+        const selected = new Set();
 
         function close(result) {
             overlay.remove();
             resolve(result);
         }
 
-        playerNames.forEach(function(name) {
+        playerNames.forEach(function(name, index) {
             const playerButton = document.createElement("button");
             playerButton.type = "button";
-            playerButton.textContent = "👤 " + name;
             playerButton.style.cssText =
-                "padding:13px;background:#2563eb;color:white;font-weight:bold;font-size:16px;";
+                "padding:13px;color:white;font-weight:bold;font-size:16px;" +
+                "border:2px solid transparent;background:#374151;";
+            playerButton.textContent = "👤 " + name;
+
+            function updateStyle() {
+                if (selected.has(index)) {
+                    playerButton.style.background = "#16a34a";
+                    playerButton.style.borderColor = "#4ade80";
+                    playerButton.textContent = "✓ " + name;
+                } else {
+                    playerButton.style.background = "#374151";
+                    playerButton.style.borderColor = "transparent";
+                    playerButton.textContent = "👤 " + name;
+                }
+            }
+
             playerButton.addEventListener("click", function() {
-                close(name);
+                if (selected.has(index)) {
+                    selected.delete(index);
+                } else {
+                    selected.add(index);
+                }
+                updateStyle();
             });
+
             list.appendChild(playerButton);
         });
 
         box.appendChild(list);
+
+        const confirmButton = document.createElement("button");
+        confirmButton.type = "button";
+        confirmButton.textContent = "✓ אישור";
+        confirmButton.style.cssText =
+            "width:100%;padding:12px;margin-bottom:10px;" +
+            "background:#2563eb;color:white;font-weight:bold;font-size:16px;";
+        confirmButton.addEventListener("click", function() {
+            if (selected.size === 0) {
+                alert("יש לבחור לפחות שחקן אחד");
+                return;
+            }
+            close(
+                Array.from(selected)
+                    .sort(function(a, b) { return a - b; })
+                    .map(function(index) { return playerNames[index]; })
+            );
+        });
+        box.appendChild(confirmButton);
 
         const cancelButton = document.createElement("button");
         cancelButton.type = "button";
@@ -634,13 +680,13 @@ updateGameTableTimer();
             await changeTableTimer(table, "stop");
         }
 
-        const payerName = await askWhoPays(
+        const payerNames = await askWhoPays(
             players.map(function(player) {
                 return player.player_name;
             })
         );
 
-        if (!payerName) return;
+        if (!payerNames) return;
 
         tableCheckoutButton.disabled = true;
         tableCheckoutButton.textContent = "סוגר חשבון...";
@@ -648,18 +694,23 @@ updateGameTableTimer();
         const finalState = tableTimerState(table);
         const elapsedSeconds = getElapsedSeconds(finalState);
         const gameCost = getGameCost(finalState);
+        const shareCost = gameCost / payerNames.length;
 
         const { error: saleError } = await db
             .from("sales")
-            .insert({
-                customer_name: payerName,
-                hourly_price: Number(table.hourly_price || 0),
-                elapsed_seconds: elapsedSeconds,
-                game_cost: Number(gameCost.toFixed(2)),
-                orders_cost: 0,
-                total_amount: Number(gameCost.toFixed(2)),
-                closed_at: new Date().toISOString()
-            });
+            .insert(
+                payerNames.map(function(payerName) {
+                    return {
+                        customer_name: payerName,
+                        hourly_price: Number(table.hourly_price || 0),
+                        elapsed_seconds: elapsedSeconds,
+                        game_cost: Number(shareCost.toFixed(2)),
+                        orders_cost: 0,
+                        total_amount: Number(shareCost.toFixed(2)),
+                        closed_at: new Date().toISOString()
+                    };
+                })
+            );
 
         if (saleError) {
             console.error("Table checkout - sale error:", saleError);
