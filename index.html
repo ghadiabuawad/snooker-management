@@ -678,15 +678,19 @@ function renderGameTables() {
 
                     <div class="table-header-players" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;"></div>
 
+                    ${players.length > 0 ? `
                     <div class="table-start-label"
                         style="
-                            margin-top:7px;
-                            color:#9ca3af;
-                            font-size:14px;
+                            margin-top:18px;
+                            text-align:center;
+                            color:white;
+                            font-size:19px;
+                            font-weight:bold;
                         "
                     >
                         🕐 שעת התחלה: ${startTimeText}
                     </div>
+                    ` : ""}
 
                 </div>
 
@@ -800,7 +804,7 @@ function updateGameTableTimer() {
     tableTimerStatus.textContent = saving ? "שומר..." :
         state.running ? "● הזמן פועל" : "● הזמן נעצר";
     const startLabel = tableElement.querySelector(".table-start-label");
-    startLabel.textContent = "🕐 שעת התחלה: " + (table.started_at ?
+    if (startLabel) startLabel.textContent = "🕐 שעת התחלה: " + (table.started_at ?
         new Date(table.started_at).toLocaleTimeString("he-IL", {
             hour: "2-digit", minute: "2-digit"
         }) : "--:--");
