@@ -379,9 +379,9 @@ async function changeTableTimer(table, action) {
     if (gameTableSaves.has(table.id)) return;
     if (action === "stop" && !table.running) return;
     if (action === "resume" && table.running) return;
-    if (action === "reset" && !confirm(
+    if (action === "reset" && !(await customConfirm(
         "האם לאפס את הזמן ועלות המשחק של שולחן " + table.table_number + "?"
-    )) return;
+    ))) return;
 
     const changes = {
         running: action === "resume",
@@ -1721,7 +1721,7 @@ function openRemoveProductModal() {
             deleteBtn.textContent = "מחק";
             deleteBtn.style.cssText = "background:#7f1d1d;color:white;padding:6px 10px;";
             deleteBtn.addEventListener("click", async function() {
-                const confirmed = confirm("להסיר את \"" + product.name + "\" מהתפריט?");
+                const confirmed = await customConfirm("להסיר את \"" + product.name + "\" מהתפריט?");
                 if (!confirmed) return;
 
                 deleteBtn.disabled = true;
@@ -2477,7 +2477,7 @@ logoutBtn.addEventListener(
     async function() {
 
         const confirmed =
-            confirm("האם אתה בטוח שברצונך להתנתק?");
+            await customConfirm("האם אתה בטוח שברצונך להתנתק?");
 
         if (!confirmed) {
             return;
