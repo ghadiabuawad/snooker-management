@@ -333,6 +333,65 @@ async function changeTableTimer(table, action) {
     }
 }
 
+function askWhoPays(playerNames) {
+    return new Promise(function(resolve) {
+        const overlay = document.createElement("div");
+        overlay.style.cssText =
+            "position:fixed;inset:0;background:rgba(0,0,0,.65);" +
+            "display:flex;align-items:center;justify-content:center;" +
+            "z-index:1000;padding:20px;";
+
+        const box = document.createElement("div");
+        box.style.cssText =
+            "background:#1f2937;border:1px solid #374151;border-radius:12px;" +
+            "padding:24px;max-width:360px;width:100%;text-align:center;";
+
+        const title = document.createElement("div");
+        title.style.cssText = "font-size:18px;font-weight:bold;margin-bottom:18px;";
+        title.textContent = "מי משלם?";
+        box.appendChild(title);
+
+        const list = document.createElement("div");
+        list.style.cssText = "display:flex;flex-direction:column;gap:10px;margin-bottom:15px;";
+
+        function close(result) {
+            overlay.remove();
+            resolve(result);
+        }
+
+        playerNames.forEach(function(name) {
+            const playerButton = document.createElement("button");
+            playerButton.type = "button";
+            playerButton.textContent = "👤 " + name;
+            playerButton.style.cssText =
+                "padding:13px;background:#2563eb;color:white;font-weight:bold;font-size:16px;";
+            playerButton.addEventListener("click", function() {
+                close(name);
+            });
+            list.appendChild(playerButton);
+        });
+
+        box.appendChild(list);
+
+        const cancelButton = document.createElement("button");
+        cancelButton.type = "button";
+        cancelButton.textContent = "ביטול";
+        cancelButton.style.cssText =
+            "width:100%;padding:11px;background:#4b5563;color:white;";
+        cancelButton.addEventListener("click", function() {
+            close(null);
+        });
+        box.appendChild(cancelButton);
+
+        overlay.appendChild(box);
+        overlay.addEventListener("click", function(event) {
+            if (event.target === overlay) close(null);
+        });
+
+        document.body.appendChild(overlay);
+    });
+}
+
 
 /* =========================
    LOAD GAME TABLES
@@ -561,7 +620,82 @@ updateGameTableTimer();
 
     const tableCheckoutButton =
     details.querySelector(".table-checkout");
-             
+
+    tableCheckoutButton.addEventListener("click", async function(event) {
+
+        event.stopPropagation();
+
+        if (players.length === 0) {
+            alert("אין שחקנים בשולחן");
+            return;
+        }
+
+        if (table.running) {
+            await changeTableTimer(table, "stop");
+        }
+
+        const payerName = await askWhoPays(
+            players.map(function(player) {
+                return player.player_name;
+            })
+        );
+
+        if (!payerName) return;
+
+        tableCheckoutButton.disabled = true;
+        tableCheckoutButton.textContent = "סוגר חשבון...";
+
+        const finalState = tableTimerState(table);
+        const elapsedSeconds = getElapsedSeconds(finalState);
+        const gameCost = getGameCost(finalState);
+
+        const { error: saleError } = await db
+            .from("sales")
+            .insert({
+                customer_name: payerName,
+                hourly_price: Number(table.hourly_price || 0),
+                elapsed_seconds: elapsedSeconds,
+                game_cost: Number(gameCost.toFixed(2)),
+                orders_cost: 0,
+                total_amount: Number(gameCost.toFixed(2)),
+                closed_at: new Date().toISOString()
+            });
+
+        if (saleError) {
+            console.error("Table checkout - sale error:", saleError);
+            alert("שגיאה בשמירת החשבון. השולחן לא אופס.");
+            tableCheckoutButton.disabled = false;
+            tableCheckoutButton.textContent = "✓ סגור חשבון";
+            return;
+        }
+
+        const { error: tableError } = await db
+            .from("game_tables")
+            .update({
+                running: false,
+                started_at: null,
+                elapsed_seconds: 0,
+                updated_at: new Date().toISOString()
+            })
+            .eq("id", table.id);
+
+        const { error: playersError } = await db
+            .from("table_players")
+            .delete()
+            .eq("table_id", table.id);
+
+        if (tableError || playersError) {
+            console.error(
+                "Table checkout - reset error:",
+                tableError,
+                playersError
+            );
+            alert("החשבון נשמר, אבל הייתה שגיאה באיפוס השולחן. נסה לרענן.");
+        }
+
+        await loadGameTables();
+    });
+
     return;
 }
         
