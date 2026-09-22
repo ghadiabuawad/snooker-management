@@ -77,6 +77,49 @@ button{
     font-weight:bold
 }
 
+.ball-badge{
+    width:48px;
+    height:48px;
+    border-radius:50%;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    background:#4b5563;
+    box-shadow:
+        inset -5px -5px 9px rgba(0,0,0,.4),
+        inset 4px 4px 7px rgba(255,255,255,.35),
+        0 3px 6px rgba(0,0,0,.5);
+    flex-shrink:0
+}
+
+.ball-badge::before{
+    content:attr(data-number);
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    width:62%;
+    height:62%;
+    background:#fff;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:bold;
+    font-size:17px;
+    color:#111827
+}
+
+.ball-badge[data-number="1"]{background:#f2c200}
+.ball-badge[data-number="2"]{background:#1955c4}
+.ball-badge[data-number="3"]{background:#d21f1f}
+.ball-badge[data-number="4"]{background:#7b2fbf}
+.ball-badge[data-number="5"]{background:#e8781a}
+.ball-badge[data-number="6"]{background:#1f8a3b}
+.ball-badge[data-number="7"]{background:#7a1f1f}
+.ball-badge[data-number="8"]{background:#111827}
+
 .buttons{
     display:flex;
     gap:10px;
@@ -659,7 +702,7 @@ function renderGameTables() {
                 <div>
 
                     <div class="customer-name">
-                        🎱 שולחן ${table.table_number}
+                        <span class="ball-badge" data-number="${table.table_number}"></span>
                     </div>
 
                     <div class="table-header-players" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;"></div>
