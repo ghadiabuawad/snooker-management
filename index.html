@@ -273,6 +273,21 @@ button:disabled{
         ⚙️ הגדרות
     </button>
 
+    <div
+        id="dateTimeDisplay"
+        style="
+            position:absolute;
+            right:20px;
+            top:50%;
+            transform:translateY(-50%);
+            text-align:center;
+            line-height:1.4;
+        "
+    >
+        <div id="currentDate" style="font-size:13px;color:#9ca3af;"></div>
+        <div id="currentTime" style="font-size:16px;font-weight:bold;color:white;"></div>
+    </div>
+
 </header>
 
 <div class="container">
@@ -383,6 +398,21 @@ const PRODUCT_CATEGORIES = [
 setInterval(function() {
     gameTableDisplays.forEach(function(update) { update(); });
 }, 1000);
+
+const currentDateEl = document.getElementById("currentDate");
+const currentTimeEl = document.getElementById("currentTime");
+
+function updateDateTimeDisplay() {
+    const now = new Date();
+    currentDateEl.textContent = now.toLocaleDateString("he-IL");
+    currentTimeEl.textContent = now.toLocaleTimeString("he-IL", {
+        hour: "2-digit",
+        minute: "2-digit"
+    });
+}
+
+updateDateTimeDisplay();
+setInterval(updateDateTimeDisplay, 1000);
 
 function tableTimerState(table) {
     return {
