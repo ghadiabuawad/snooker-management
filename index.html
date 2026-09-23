@@ -668,11 +668,40 @@ function openEditTableModal(table, players) {
     timeLabel.textContent = "שעת התחלה";
     box.appendChild(timeLabel);
 
+    const timeRow = document.createElement("div");
+    timeRow.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:20px;";
+
+    const timeDownBtn = document.createElement("button");
+    timeDownBtn.type = "button";
+    timeDownBtn.textContent = "▼";
+    timeDownBtn.style.cssText = "padding:10px 16px;background:#4b5563;color:white;font-size:18px;";
+
     const timeInput = document.createElement("input");
     timeInput.type = "time";
     timeInput.value = toTimeInputValue(table.started_at);
-    timeInput.style.cssText = "width:100%;margin-bottom:20px;text-align:center;font-size:18px;";
-    box.appendChild(timeInput);
+    timeInput.style.cssText = "flex:1;text-align:center;font-size:18px;";
+
+    const timeUpBtn = document.createElement("button");
+    timeUpBtn.type = "button";
+    timeUpBtn.textContent = "▲";
+    timeUpBtn.style.cssText = "padding:10px 16px;background:#4b5563;color:white;font-size:18px;";
+
+    function stepTime(minutesDelta) {
+        if (!timeInput.value) timeInput.value = "00:00";
+        const parts = timeInput.value.split(":").map(Number);
+        let totalMinutes = parts[0] * 60 + parts[1] + minutesDelta;
+        totalMinutes = ((totalMinutes % 1440) + 1440) % 1440;
+        const pad = function(n) { return String(n).padStart(2, "0"); };
+        timeInput.value = pad(Math.floor(totalMinutes / 60)) + ":" + pad(totalMinutes % 60);
+    }
+
+    timeDownBtn.addEventListener("click", function() { stepTime(-1); });
+    timeUpBtn.addEventListener("click", function() { stepTime(1); });
+
+    timeRow.appendChild(timeDownBtn);
+    timeRow.appendChild(timeInput);
+    timeRow.appendChild(timeUpBtn);
+    box.appendChild(timeRow);
 
     const saveBtn = document.createElement("button");
     saveBtn.type = "button";
