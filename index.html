@@ -1461,6 +1461,22 @@ async function loadTabOrders() {
     renderBarNames();
 }
 
+async function loadBarTabs() {
+    const { data, error } = await db
+        .from("bar_tabs")
+        .select("*")
+        .order("created_at", { ascending: true });
+
+    if (error) {
+        console.error("Load bar tabs error:", error);
+        alert("שגיאה בטעינת רשימת הלקוחות");
+        return;
+    }
+
+    barNames = (data || []).map(function(row) { return row.name; });
+    renderBarNames();
+}
+
 /* =========================
    BAR TABS (CUSTOMERS)
 ========================= */
@@ -1537,7 +1553,13 @@ function renderBarNames() {
             removeBtn.type = "button";
             removeBtn.textContent = "✕";
             removeBtn.style.cssText = "padding:10px;background:#4b5563;color:white;";
-            removeBtn.addEventListener("click", function() {
+            removeBtn.addEventListener("click", async function() {
+                const { error } = await db.from("bar_tabs").delete().eq("name", name);
+                if (error) {
+                    console.error("Remove bar name error:", error);
+                    alert("שגיאה בהסרת השם: " + error.message);
+                    return;
+                }
                 barNames = barNames.filter(function(n) { return n !== name; });
                 renderBarNames();
             });
@@ -1548,17 +1570,24 @@ function renderBarNames() {
     });
 }
 
-addBarNameBtn.addEventListener("click", function() {
+addBarNameBtn.addEventListener("click", async function() {
     const name = prompt("שם הלקוח:");
     if (!name) return;
 
     const trimmed = name.trim();
     if (!trimmed) return;
 
-    if (getAllBarNames().indexOf(trimmed) === -1) {
-        barNames.push(trimmed);
+    if (getAllBarNames().indexOf(trimmed) !== -1) return;
+
+    const { error } = await db.from("bar_tabs").insert({ name: trimmed });
+
+    if (error) {
+        console.error("Add bar name error:", error);
+        alert("שגיאה בהוספת השם: " + error.message);
+        return;
     }
 
+    barNames.push(trimmed);
     renderBarNames();
 });
 
@@ -1790,6 +1819,15 @@ function openTabModal(name) {
 
         if (deleteError) {
             console.error("Clear tab orders error:", deleteError);
+        }
+
+        const { error: barTabError } = await db
+            .from("bar_tabs")
+            .delete()
+            .eq("name", name);
+
+        if (barTabError) {
+            console.error("Clear bar tab error:", barTabError);
         }
 
         tabOrders = tabOrders.filter(function(order) {
@@ -2273,6 +2311,7 @@ async function login() {
     await loadGameTables();
     await loadProducts();
     await loadTabOrders();
+    await loadBarTabs();
 
     loginBtn.disabled = false;
 
@@ -2319,6 +2358,7 @@ async function checkLogin() {
         await loadGameTables();
         await loadProducts();
         await loadTabOrders();
+        await loadBarTabs();
     } else {
 
         loginScreen.style.display =
