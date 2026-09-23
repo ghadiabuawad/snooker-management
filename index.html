@@ -162,17 +162,19 @@ button:disabled{
 }
 
 .table-account-actions{
+    display:grid;
+    grid-template-columns:auto 1fr;
+    gap:10px;
     margin-top:20px
 }
 
 .table-account-actions button{
-    width:100%;
     padding:14px 8px;
-    font-weight:bold;
-    font-size:17px
+    font-weight:bold
 }
 
-.table-checkout{background:#f59e0b;color:#111827}
+.table-edit{background:#4b5563;color:white;font-size:14px;padding:14px 16px}
+.table-checkout{background:#f59e0b;color:#111827;font-size:17px}
 
 @media(max-width:600px){
     .buttons{
@@ -623,6 +625,124 @@ function askWhoPays(playerNames) {
     });
 }
 
+function toDatetimeLocalValue(isoString) {
+    if (!isoString) return "";
+    const d = new Date(isoString);
+    const pad = function(n) { return String(n).padStart(2, "0"); };
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) +
+        "T" + pad(d.getHours()) + ":" + pad(d.getMinutes());
+}
+
+function openEditTableModal(table, players) {
+    const overlay = document.createElement("div");
+    overlay.style.cssText =
+        "position:fixed;inset:0;background:rgba(0,0,0,.7);" +
+        "display:flex;align-items:center;justify-content:center;" +
+        "z-index:1800;padding:20px;";
+
+    const box = document.createElement("div");
+    box.style.cssText =
+        "background:#1f2937;border:1px solid #374151;border-radius:12px;" +
+        "padding:22px;max-width:360px;width:100%;max-height:85vh;overflow-y:auto;";
+
+    const title = document.createElement("div");
+    title.style.cssText = "font-size:18px;font-weight:bold;margin-bottom:18px;text-align:center;";
+    title.textContent = "✏️ עריכת שולחן " + table.table_number;
+    box.appendChild(title);
+
+    const nameLabel = document.createElement("div");
+    nameLabel.style.cssText = "font-weight:bold;margin-bottom:10px;";
+    nameLabel.textContent = "שמות שחקנים";
+    box.appendChild(nameLabel);
+
+    const nameInputs = players.map(function(player) {
+        const input = document.createElement("input");
+        input.type = "text";
+        input.value = player.player_name;
+        input.style.cssText = "width:100%;margin-bottom:10px;";
+        box.appendChild(input);
+        return { id: player.id, input: input, original: player.player_name };
+    });
+
+    const timeLabel = document.createElement("div");
+    timeLabel.style.cssText = "font-weight:bold;margin:15px 0 10px;";
+    timeLabel.textContent = "שעת התחלה";
+    box.appendChild(timeLabel);
+
+    const timeInput = document.createElement("input");
+    timeInput.type = "datetime-local";
+    timeInput.value = toDatetimeLocalValue(table.started_at);
+    timeInput.style.cssText = "width:100%;margin-bottom:20px;";
+    box.appendChild(timeInput);
+
+    const saveBtn = document.createElement("button");
+    saveBtn.type = "button";
+    saveBtn.textContent = "✓ שמור שינויים";
+    saveBtn.style.cssText =
+        "width:100%;padding:13px;margin-bottom:10px;" +
+        "background:#16a34a;color:white;font-weight:bold;font-size:15px;";
+    saveBtn.addEventListener("click", async function() {
+        saveBtn.disabled = true;
+        saveBtn.textContent = "שומר...";
+
+        let hadError = false;
+
+        for (const entry of nameInputs) {
+            const newName = entry.input.value.trim();
+            if (!newName || newName === entry.original) continue;
+
+            const { error } = await db
+                .from("table_players")
+                .update({ player_name: newName })
+                .eq("id", entry.id);
+
+            if (error) {
+                console.error("Edit player name error:", error);
+                hadError = true;
+            }
+        }
+
+        if (timeInput.value) {
+            const newStartedAt = new Date(timeInput.value).toISOString();
+            if (newStartedAt !== table.started_at) {
+                const { error } = await db
+                    .from("game_tables")
+                    .update({ started_at: newStartedAt })
+                    .eq("id", table.id);
+
+                if (error) {
+                    console.error("Edit start time error:", error);
+                    hadError = true;
+                }
+            }
+        }
+
+        if (hadError) {
+            alert("היתה שגיאה בשמירת חלק מהשינויים. נסה שוב.");
+            saveBtn.disabled = false;
+            saveBtn.textContent = "✓ שמור שינויים";
+            return;
+        }
+
+        overlay.remove();
+        await loadGameTables();
+    });
+    box.appendChild(saveBtn);
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.type = "button";
+    cancelBtn.textContent = "ביטול";
+    cancelBtn.style.cssText = "width:100%;padding:11px;background:#4b5563;color:white;";
+    cancelBtn.addEventListener("click", function() { overlay.remove(); });
+    box.appendChild(cancelBtn);
+
+    overlay.appendChild(box);
+    overlay.addEventListener("click", function(event) {
+        if (event.target === overlay) overlay.remove();
+    });
+    document.body.appendChild(overlay);
+}
+
 
 /* =========================
    LOAD GAME TABLES
@@ -823,6 +943,7 @@ tableElement.addEventListener(
         </div>
         <div class="table-timer-status" style="text-align:center;margin-bottom:15px;"></div>
         <div class="table-account-actions">
+            <button type="button" class="table-edit">✏️ עריכה</button>
             <button type="button" class="table-checkout">🕐 סגור זמן</button>
         </div>
     `;
@@ -869,6 +990,18 @@ resetTableButton.addEventListener("click", function() {
 });
 gameTableDisplays.set(table.id, updateGameTableTimer);
 updateGameTableTimer();
+
+    const tableEditButton =
+    details.querySelector(".table-edit");
+
+    tableEditButton.addEventListener("click", function(event) {
+        event.stopPropagation();
+        if (players.length === 0) {
+            alert("אין שחקנים בשולחן");
+            return;
+        }
+        openEditTableModal(table, players);
+    });
 
     const tableCheckoutButton =
     details.querySelector(".table-checkout");
