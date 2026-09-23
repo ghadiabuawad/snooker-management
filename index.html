@@ -359,7 +359,7 @@ button:disabled{
     </button>
 
     <div style="text-align:center;color:#9ca3af;font-size:12px;margin-top:6px;">
-        (למורשים בלבד)
+        (הסה"כ הכללי למורשים בלבד)
     </div>
 
     <div
@@ -2745,12 +2745,6 @@ async function loadSalesHistory() {
         return;
     }
 
-    const pinCorrect = await askSalesHistoryPin();
-    if (!pinCorrect) {
-        return;
-    }
-
-
     salesHistoryBtn.disabled = true;
 
     salesHistoryBtn.textContent =
@@ -2866,9 +2860,17 @@ async function loadSalesHistory() {
     totalValue.style.color =
         "#4ade80";
 
-    totalValue.textContent =
-        totalIncome.toFixed(2) +
-        " ₪";
+    const revealTotalBtn = document.createElement("button");
+    revealTotalBtn.type = "button";
+    revealTotalBtn.textContent = "🔒 הצג";
+    revealTotalBtn.style.cssText =
+        "padding:8px 14px;background:#4b5563;color:white;font-weight:bold;font-size:14px;";
+    revealTotalBtn.addEventListener("click", async function() {
+        const pinCorrect = await askSalesHistoryPin();
+        if (!pinCorrect) return;
+        totalValue.textContent = totalIncome.toFixed(2) + " ₪";
+    });
+    totalValue.appendChild(revealTotalBtn);
 
 
     totalBox.appendChild(
