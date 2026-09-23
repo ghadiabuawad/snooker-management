@@ -2892,18 +2892,50 @@ async function loadSalesHistory() {
     ========================= */
 
     const exportRow = document.createElement("div");
-    exportRow.style.cssText = "margin-bottom:20px;";
+    exportRow.style.cssText = "display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:20px;";
 
     const pdfBtn = document.createElement("button");
     pdfBtn.type = "button";
     pdfBtn.textContent = "📄 שמור / הדפס PDF";
     pdfBtn.style.cssText =
-        "width:100%;padding:13px;background:#dc2626;color:white;font-weight:bold;font-size:15px;";
+        "padding:13px 6px;background:#dc2626;color:white;font-weight:bold;font-size:14px;";
     pdfBtn.addEventListener("click", function() {
         printSalesReport(data, totalIncome);
     });
 
+    const deleteHistoryBtn = document.createElement("button");
+    deleteHistoryBtn.type = "button";
+    deleteHistoryBtn.textContent = "🗑 מחק היסטוריה";
+    deleteHistoryBtn.style.cssText =
+        "padding:13px 6px;background:#7f1d1d;color:white;font-weight:bold;font-size:14px;";
+    deleteHistoryBtn.addEventListener("click", async function() {
+        const pinCorrect = await askSalesHistoryPin();
+        if (!pinCorrect) return;
+
+        const confirmed = await customConfirm(
+            "⚠️ פעולה זו תמחק את כל היסטוריית המכירות לצמיתות ולא ניתן לבטל אותה.\n\nלהמשיך?"
+        );
+        if (!confirmed) return;
+
+        deleteHistoryBtn.disabled = true;
+        deleteHistoryBtn.textContent = "מוחק...";
+
+        const { error } = await db.from("sales").delete().gt("id", 0);
+
+        if (error) {
+            console.error("Delete sales history error:", error);
+            alert("שגיאה במחיקת ההיסטוריה: " + error.message);
+            deleteHistoryBtn.disabled = false;
+            deleteHistoryBtn.textContent = "🗑 מחק היסטוריה";
+            return;
+        }
+
+        salesHistory.style.display = "none";
+        await loadSalesHistory();
+    });
+
     exportRow.appendChild(pdfBtn);
+    exportRow.appendChild(deleteHistoryBtn);
     salesHistory.appendChild(exportRow);
 
 
