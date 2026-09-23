@@ -654,14 +654,34 @@ function openEditTableModal(table, players) {
     nameLabel.textContent = "שמות שחקנים";
     box.appendChild(nameLabel);
 
+    const namesContainer = document.createElement("div");
+    box.appendChild(namesContainer);
+
     const nameInputs = players.map(function(player) {
         const input = document.createElement("input");
         input.type = "text";
         input.value = player.player_name;
         input.style.cssText = "width:100%;margin-bottom:10px;";
-        box.appendChild(input);
+        namesContainer.appendChild(input);
         return { id: player.id, input: input, original: player.player_name };
     });
+
+    const addPlayerBtn = document.createElement("button");
+    addPlayerBtn.type = "button";
+    addPlayerBtn.textContent = "+ הוסף שחקן";
+    addPlayerBtn.style.cssText =
+        "width:100%;padding:10px;margin-bottom:15px;" +
+        "background:#374151;color:white;font-weight:bold;font-size:14px;";
+    addPlayerBtn.addEventListener("click", function() {
+        const input = document.createElement("input");
+        input.type = "text";
+        input.placeholder = "שם שחקן חדש";
+        input.style.cssText = "width:100%;margin-bottom:10px;";
+        namesContainer.appendChild(input);
+        nameInputs.push({ id: null, input: input, original: "" });
+        input.focus();
+    });
+    box.appendChild(addPlayerBtn);
 
     const timeLabel = document.createElement("div");
     timeLabel.style.cssText = "font-weight:bold;margin:15px 0 10px;";
@@ -742,9 +762,32 @@ function openEditTableModal(table, players) {
         saveBtn.textContent = "שומר...";
 
         let hadError = false;
+        let nextPosition = players.length + 1;
 
         for (const entry of nameInputs) {
             const newName = entry.input.value.trim();
+
+            if (entry.id === null) {
+                if (!newName) continue;
+
+                const { error } = await db
+                    .from("table_players")
+                    .insert({
+                        table_id: table.id,
+                        player_name: newName,
+                        position: nextPosition
+                    });
+
+                nextPosition++;
+
+                if (error) {
+                    console.error("Add player error:", error);
+                    hadError = true;
+                }
+
+                continue;
+            }
+
             if (!newName || newName === entry.original) continue;
 
             const { error } = await db
