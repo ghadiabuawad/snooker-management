@@ -1538,6 +1538,21 @@ function getAllBarNames() {
     return Array.from(names);
 }
 
+function buildItemsSummary(name) {
+    const orders = getTabOrdersForName(name);
+    if (orders.length === 0) return "";
+
+    const grouped = new Map();
+    orders.forEach(function(order) {
+        const key = order.product_name;
+        grouped.set(key, (grouped.get(key) || 0) + 1);
+    });
+
+    return Array.from(grouped.entries()).map(function(entry) {
+        return entry[1] > 1 ? entry[0] + " ×" + entry[1] : entry[0];
+    }).join(", ");
+}
+
 function renderBarNames() {
     barNamesList.innerHTML = "";
 
@@ -1552,6 +1567,9 @@ function renderBarNames() {
     }
 
     names.forEach(function(name) {
+        const container = document.createElement("div");
+        container.style.cssText = "width:100%;";
+
         const wrapper = document.createElement("div");
         wrapper.style.cssText = "display:flex;align-items:center;gap:4px;width:100%;";
 
@@ -1587,7 +1605,19 @@ function renderBarNames() {
             wrapper.appendChild(removeBtn);
         }
 
-        barNamesList.appendChild(wrapper);
+        container.appendChild(wrapper);
+
+        const itemsSummary = buildItemsSummary(name);
+        if (itemsSummary) {
+            const summaryBadge = document.createElement("div");
+            summaryBadge.style.cssText =
+                "background:#f3f4f6;color:#111827;font-size:13px;" +
+                "padding:6px 10px;border-radius:6px;margin-top:4px;";
+            summaryBadge.textContent = itemsSummary;
+            container.appendChild(summaryBadge);
+        }
+
+        barNamesList.appendChild(container);
     });
 }
 
