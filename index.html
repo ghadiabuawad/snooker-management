@@ -303,9 +303,23 @@ button:disabled{
     padding-top:25px;
 ">
 
-    <h2 class="section-title">👤 לקוחות</h2>
+    <button
+        id="customersToggleBtn"
+        type="button"
+        style="
+            width:100%;
+            padding:14px;
+            background:#2563eb;
+            color:white;
+            font-weight:bold;
+            font-size:16px;
+            margin-bottom:15px;
+        "
+    >
+        👤 לקוחות
+    </button>
 
-    <div id="barNamesList" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:15px;"></div>
+    <div id="barNamesList" style="display:none;flex-direction:column;gap:10px;margin-bottom:15px;"></div>
 
     <button
         id="addBarNameBtn"
@@ -394,6 +408,13 @@ let tabOrders = [];
 let barNames = [];
 const barNamesList = document.getElementById("barNamesList");
 const addBarNameBtn = document.getElementById("addBarNameBtn");
+const customersToggleBtn = document.getElementById("customersToggleBtn");
+
+customersToggleBtn.addEventListener("click", function() {
+    const isHidden = barNamesList.style.display === "none";
+    barNamesList.style.display = isHidden ? "flex" : "none";
+    customersToggleBtn.textContent = isHidden ? "✖ סגור לקוחות" : "👤 לקוחות";
+});
 
 const PRODUCT_CATEGORIES = [
     { key: "food", label: "🍔 אוכל" },
@@ -1532,7 +1553,7 @@ function renderBarNames() {
 
     names.forEach(function(name) {
         const wrapper = document.createElement("div");
-        wrapper.style.cssText = "display:flex;align-items:center;gap:4px;";
+        wrapper.style.cssText = "display:flex;align-items:center;gap:4px;width:100%;";
 
         const total = getTabTotal(name);
 
@@ -1542,7 +1563,7 @@ function renderBarNames() {
             "👤 " + name +
             (total > 0 ? " (" + total.toFixed(2) + " ₪)" : "");
         nameBtn.style.cssText =
-            "padding:10px 14px;background:#2563eb;color:white;font-weight:bold;";
+            "flex:1;padding:12px 14px;background:#2563eb;color:white;font-weight:bold;text-align:right;";
         nameBtn.addEventListener("click", function() {
             openTabModal(name);
         });
