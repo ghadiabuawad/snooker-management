@@ -2994,28 +2994,32 @@ async function loadSalesHistory() {
             rows.push({ item: "-", qty: "-", price: Number(sale.total_amount || 0) });
         }
 
+        const frameSide = "border-left:2px solid #ffffff;border-right:2px solid #ffffff;";
+
         rows.forEach(function(row, index) {
             const tr = document.createElement("tr");
             tr.style.cssText = "border-bottom:1px solid #263244;";
 
+            const topBorder = index === 0 ? "border-top:2px solid #ffffff;" : "";
+
             const dateCell = document.createElement("td");
-            dateCell.style.cssText = "padding:7px 6px;color:#9ca3af;font-size:12px;white-space:nowrap;";
+            dateCell.style.cssText = "padding:7px 6px;color:#9ca3af;font-size:12px;white-space:nowrap;" + frameSide + topBorder;
             dateCell.textContent = index === 0 ? dateText : "";
 
             const nameCell = document.createElement("td");
-            nameCell.style.cssText = "padding:7px 6px;font-weight:bold;";
+            nameCell.style.cssText = "padding:7px 6px;font-weight:bold;" + topBorder;
             nameCell.textContent = index === 0 ? (sale.customer_name || "ללא שם") : "";
 
             const itemCell = document.createElement("td");
-            itemCell.style.cssText = "padding:7px 6px;";
+            itemCell.style.cssText = "padding:7px 6px;" + topBorder;
             itemCell.textContent = row.item;
 
             const qtyCell = document.createElement("td");
-            qtyCell.style.cssText = "padding:7px 6px;text-align:center;color:#9ca3af;";
+            qtyCell.style.cssText = "padding:7px 6px;text-align:center;color:#9ca3af;" + topBorder;
             qtyCell.textContent = row.qty;
 
             const priceCell = document.createElement("td");
-            priceCell.style.cssText = "padding:7px 6px;text-align:right;white-space:nowrap;";
+            priceCell.style.cssText = "padding:7px 6px;text-align:right;white-space:nowrap;" + frameSide + topBorder;
             priceCell.textContent = Number(row.price).toFixed(2) + " ₪";
 
             tr.appendChild(dateCell);
@@ -3027,10 +3031,10 @@ async function loadSalesHistory() {
         });
 
         const totalTr = document.createElement("tr");
-        totalTr.style.cssText = "border-bottom:2px solid #374151;background:#18212f;";
+        totalTr.style.cssText = "background:#18212f;";
         totalTr.innerHTML =
-            '<td colspan="4" style="padding:7px 6px;text-align:right;font-weight:bold;color:#4ade80;">סה"כ</td>' +
-            '<td style="padding:7px 6px;text-align:right;font-weight:bold;color:#4ade80;white-space:nowrap;">' +
+            '<td colspan="4" style="padding:7px 6px;text-align:right;font-weight:bold;color:#4ade80;border-left:2px solid #ffffff;border-bottom:2px solid #ffffff;">סה"כ</td>' +
+            '<td style="padding:7px 6px;text-align:right;font-weight:bold;color:#4ade80;white-space:nowrap;border-right:2px solid #ffffff;border-bottom:2px solid #ffffff;">' +
             Number(sale.total_amount || 0).toFixed(2) + ' ₪</td>';
         salesTbody.appendChild(totalTr);
     });
