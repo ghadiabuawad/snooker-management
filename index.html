@@ -884,7 +884,17 @@ function openEditTableModal(table, players) {
             }
         }
 
-        {
+        if (nameInputs.length === 0) {
+            const { error } = await db
+                .from("game_tables")
+                .update({ running: false, started_at: null, elapsed_seconds: 0 })
+                .eq("id", table.id);
+
+            if (error) {
+                console.error("Reset empty table error:", error);
+                hadError = true;
+            }
+        } else {
             const baseDate = table.started_at ? new Date(table.started_at) : new Date();
             baseDate.setHours(hourValue, minuteValue, 0, 0);
             const newStartedAt = baseDate.toISOString();
