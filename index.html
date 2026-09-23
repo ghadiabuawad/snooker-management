@@ -688,11 +688,13 @@ function openEditTableModal(table, players) {
         return { id: player.id, input: input, original: player.player_name };
     });
 
+    const removedPlayerIds = [];
+
     const addPlayerBtn = document.createElement("button");
     addPlayerBtn.type = "button";
     addPlayerBtn.textContent = "+ הוסף שחקן";
     addPlayerBtn.style.cssText =
-        "width:100%;padding:10px;margin-bottom:15px;" +
+        "width:100%;padding:10px;margin-bottom:10px;" +
         "background:#374151;color:white;font-weight:bold;font-size:14px;";
     addPlayerBtn.addEventListener("click", function() {
         const input = document.createElement("input");
@@ -704,6 +706,20 @@ function openEditTableModal(table, players) {
         input.focus();
     });
     box.appendChild(addPlayerBtn);
+
+    const removePlayerBtn = document.createElement("button");
+    removePlayerBtn.type = "button";
+    removePlayerBtn.textContent = "- הסר שחקן";
+    removePlayerBtn.style.cssText =
+        "width:100%;padding:10px;margin-bottom:15px;" +
+        "background:#374151;color:white;font-weight:bold;font-size:14px;";
+    removePlayerBtn.addEventListener("click", function() {
+        const entry = nameInputs.pop();
+        if (!entry) return;
+        if (entry.id !== null) removedPlayerIds.push(entry.id);
+        entry.input.remove();
+    });
+    box.appendChild(removePlayerBtn);
 
     const timeLabel = document.createElement("div");
     timeLabel.style.cssText = "font-weight:bold;margin:15px 0 10px;";
@@ -819,6 +835,18 @@ function openEditTableModal(table, players) {
 
             if (error) {
                 console.error("Edit player name error:", error);
+                hadError = true;
+            }
+        }
+
+        if (removedPlayerIds.length > 0) {
+            const { error } = await db
+                .from("table_players")
+                .delete()
+                .in("id", removedPlayerIds);
+
+            if (error) {
+                console.error("Remove player error:", error);
                 hadError = true;
             }
         }
