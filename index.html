@@ -162,22 +162,17 @@ button:disabled{
 }
 
 .table-account-actions{
-    display:grid;
-    grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:10px;
     margin-top:20px
 }
 
 .table-account-actions button{
     width:100%;
-    min-width:0;
     padding:14px 8px;
     font-weight:bold;
     font-size:17px
 }
 
 .table-checkout{background:#f59e0b;color:#111827}
-.table-debt{background:#dc2626;color:white}
 
 @media(max-width:600px){
     .buttons{
@@ -828,8 +823,7 @@ tableElement.addEventListener(
         </div>
         <div class="table-timer-status" style="text-align:center;margin-bottom:15px;"></div>
         <div class="table-account-actions">
-            <button type="button" class="table-checkout">✓ סגור חשבון</button>
-            <button type="button" class="table-debt">חוב</button>
+            <button type="button" class="table-checkout">🕐 סגור זמן</button>
         </div>
     `;
 
@@ -901,87 +895,36 @@ updateGameTableTimer();
         if (!payerNames) return;
 
         tableCheckoutButton.disabled = true;
-        tableCheckoutButton.textContent = "סוגר חשבון...";
+        tableCheckoutButton.textContent = "סוגר זמן...";
 
         const finalState = tableTimerState(table);
         const elapsedSeconds = getElapsedSeconds(finalState);
         const gameCost = getGameCost(finalState);
         const shareCost = gameCost / payerNames.length;
 
-        const includeBarTab = {};
-        for (const payerName of payerNames) {
-            const barTotal = getTabTotal(payerName);
-            includeBarTab[payerName] = barTotal > 0
-                ? await customConfirm(
-                    "ל" + payerName + " יש הזמנות פתוחות מהבר בסך " +
-                    barTotal.toFixed(2) + " ₪.\n\n" +
-                    "לסגור אותן ביחד עם חשבון השולחן?"
-                )
-                : false;
-        }
-
-        const { data: insertedSales, error: saleError } = await db
-            .from("sales")
+        const { data: insertedOrders, error: ordersError } = await db
+            .from("tab_orders")
             .insert(
                 payerNames.map(function(payerName) {
-                    const payerOrdersTotal = includeBarTab[payerName] ? getTabTotal(payerName) : 0;
-                    const payerTotal = shareCost + payerOrdersTotal;
                     return {
-                        customer_name: payerName,
-                        hourly_price: Number(table.hourly_price || 0),
-                        elapsed_seconds: elapsedSeconds,
-                        game_cost: Number(shareCost.toFixed(2)),
-                        orders_cost: Number(payerOrdersTotal.toFixed(2)),
-                        total_amount: Number(payerTotal.toFixed(2)),
-                        closed_at: new Date().toISOString()
+                        tab_name: payerName,
+                        category: "game",
+                        product_name: "⏱ זמן משחק (" + formatTime(elapsedSeconds) + ")",
+                        price: Number(shareCost.toFixed(2))
                     };
                 })
             )
             .select();
 
-        if (saleError) {
-            console.error("Table checkout - sale error:", saleError);
-            alert("שגיאה בשמירת החשבון. השולחן לא אופס: " + saleError.message);
+        if (ordersError) {
+            console.error("Close time - save error:", ordersError);
+            alert("שגיאה בשמירת הזמן: " + ordersError.message);
             tableCheckoutButton.disabled = false;
-            tableCheckoutButton.textContent = "✓ סגור חשבון";
+            tableCheckoutButton.textContent = "🕐 סגור זמן";
             return;
         }
 
-        for (let i = 0; i < payerNames.length; i++) {
-            const payerName = payerNames[i];
-            if (!includeBarTab[payerName]) continue;
-
-            const items = getTabOrdersForName(payerName);
-            if (items.length > 0) {
-                const { error: itemsError } = await db
-                    .from("sale_items")
-                    .insert(
-                        items.map(function(order) {
-                            return {
-                                sale_id: insertedSales[i].id,
-                                category: order.category,
-                                product_name: order.product_name,
-                                price: Number(order.price || 0)
-                            };
-                        })
-                    );
-                if (itemsError) {
-                    console.error("Save sale items error:", itemsError);
-                }
-            }
-
-            await db
-                .from("tab_orders")
-                .delete()
-                .eq("tab_name", payerName);
-        }
-
-        tabOrders = tabOrders.filter(function(order) {
-            return !includeBarTab[order.tab_name];
-        });
-        barNames = barNames.filter(function(n) {
-            return !includeBarTab[n];
-        });
+        tabOrders = tabOrders.concat(insertedOrders);
 
         const { error: tableError } = await db
             .from("game_tables")
@@ -1000,11 +943,11 @@ updateGameTableTimer();
 
         if (tableError || playersError) {
             console.error(
-                "Table checkout - reset error:",
+                "Close time - reset error:",
                 tableError,
                 playersError
             );
-            alert("החשבון נשמר, אבל הייתה שגיאה באיפוס השולחן. נסה לרענן.");
+            alert("הזמן נשמר, אבל הייתה שגיאה באיפוס השולחן. נסה לרענן.");
         }
 
         await loadGameTables();
