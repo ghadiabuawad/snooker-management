@@ -2960,7 +2960,15 @@ async function loadSalesHistory() {
 
     const salesTbody = document.createElement("tbody");
 
-    data.forEach(function(sale) {
+    data.forEach(function(sale, groupIndex) {
+
+        if (groupIndex > 0) {
+            const spacerTr = document.createElement("tr");
+            spacerTr.innerHTML = '<td colspan="5" style="padding:0;height:14px;border:none;background:transparent;"></td>';
+            salesTbody.appendChild(spacerTr);
+        }
+
+        const groupBg = groupIndex % 2 === 0 ? "#1c2740" : "#101724";
 
         const saleDate = new Date(sale.closed_at || sale.created_at);
         const dateText =
@@ -2994,28 +3002,29 @@ async function loadSalesHistory() {
             rows.push({ item: "-", qty: "-", price: Number(sale.total_amount || 0) });
         }
 
-        const frameSide = "border-left:2px solid #ffffff;border-right:2px solid #ffffff;";
+        const frameSide = "border-left:3px solid #fbbf24;border-right:3px solid #fbbf24;background:" + groupBg + ";";
+        const topAccent = "border-top:3px solid #fbbf24;";
+        const bottomAccent = "border-bottom:3px solid #fbbf24;";
 
         rows.forEach(function(row, index) {
             const tr = document.createElement("tr");
-            tr.style.cssText = "border-bottom:1px solid #263244;";
 
-            const topBorder = index === 0 ? "border-top:2px solid #ffffff;" : "";
+            const topBorder = index === 0 ? topAccent : "";
 
             const dateCell = document.createElement("td");
             dateCell.style.cssText = "padding:7px 6px;color:#9ca3af;font-size:12px;white-space:nowrap;" + frameSide + topBorder;
             dateCell.textContent = index === 0 ? dateText : "";
 
             const nameCell = document.createElement("td");
-            nameCell.style.cssText = "padding:7px 6px;font-weight:bold;" + topBorder;
+            nameCell.style.cssText = "padding:7px 6px;font-weight:bold;background:" + groupBg + ";" + topBorder;
             nameCell.textContent = index === 0 ? (sale.customer_name || "ללא שם") : "";
 
             const itemCell = document.createElement("td");
-            itemCell.style.cssText = "padding:7px 6px;" + topBorder;
+            itemCell.style.cssText = "padding:7px 6px;background:" + groupBg + ";" + topBorder;
             itemCell.textContent = row.item;
 
             const qtyCell = document.createElement("td");
-            qtyCell.style.cssText = "padding:7px 6px;text-align:center;color:#9ca3af;" + topBorder;
+            qtyCell.style.cssText = "padding:7px 6px;text-align:center;color:#9ca3af;background:" + groupBg + ";" + topBorder;
             qtyCell.textContent = row.qty;
 
             const priceCell = document.createElement("td");
@@ -3031,10 +3040,9 @@ async function loadSalesHistory() {
         });
 
         const totalTr = document.createElement("tr");
-        totalTr.style.cssText = "background:#18212f;";
         totalTr.innerHTML =
-            '<td colspan="4" style="padding:7px 6px;text-align:right;font-weight:bold;color:#4ade80;border-left:2px solid #ffffff;border-bottom:2px solid #ffffff;">סה"כ</td>' +
-            '<td style="padding:7px 6px;text-align:right;font-weight:bold;color:#4ade80;white-space:nowrap;border-right:2px solid #ffffff;border-bottom:2px solid #ffffff;">' +
+            '<td colspan="4" style="padding:7px 6px;text-align:right;font-weight:bold;color:#4ade80;background:' + groupBg + ';border-left:3px solid #fbbf24;' + bottomAccent + '">סה"כ</td>' +
+            '<td style="padding:7px 6px;text-align:right;font-weight:bold;color:#4ade80;white-space:nowrap;background:' + groupBg + ';border-right:3px solid #fbbf24;' + bottomAccent + '">' +
             Number(sale.total_amount || 0).toFixed(2) + ' ₪</td>';
         salesTbody.appendChild(totalTr);
     });
