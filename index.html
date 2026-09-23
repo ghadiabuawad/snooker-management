@@ -2956,11 +2956,11 @@ async function loadSalesHistory() {
         const saleThead = document.createElement("thead");
         saleThead.innerHTML = `
             <tr style="background:#18212f;">
-                <th style="padding:10px 6px;text-align:right;border:${gridBorder};white-space:nowrap;">תאריך</th>
                 <th style="padding:10px 6px;text-align:right;border:${gridBorder};">שם</th>
                 <th style="padding:10px 6px;text-align:right;border:${gridBorder};">פריט</th>
                 <th style="padding:10px 6px;text-align:center;border:${gridBorder};">כמות</th>
                 <th style="padding:10px 6px;text-align:right;border:${gridBorder};">מחיר</th>
+                <th style="padding:10px 6px;text-align:right;border:${gridBorder};white-space:nowrap;">תאריך</th>
             </tr>
         `;
         saleTable.appendChild(saleThead);
@@ -3002,10 +3002,6 @@ async function loadSalesHistory() {
         rows.forEach(function(row, index) {
             const tr = document.createElement("tr");
 
-            const dateCell = document.createElement("td");
-            dateCell.style.cssText = "padding:7px 6px;color:#9ca3af;font-size:12px;white-space:nowrap;border:" + gridBorder + ";";
-            dateCell.textContent = index === 0 ? dateText : "";
-
             const nameCell = document.createElement("td");
             nameCell.style.cssText = "padding:7px 6px;font-weight:bold;border:" + gridBorder + ";";
             nameCell.textContent = index === 0 ? (sale.customer_name || "ללא שם") : "";
@@ -3022,19 +3018,24 @@ async function loadSalesHistory() {
             priceCell.style.cssText = "padding:7px 6px;text-align:right;white-space:nowrap;border:" + gridBorder + ";";
             priceCell.textContent = Number(row.price).toFixed(2) + " ₪";
 
-            tr.appendChild(dateCell);
+            const dateCell = document.createElement("td");
+            dateCell.style.cssText = "padding:7px 6px;color:#9ca3af;font-size:12px;white-space:nowrap;border:" + gridBorder + ";";
+            dateCell.textContent = index === 0 ? dateText : "";
+
             tr.appendChild(nameCell);
             tr.appendChild(itemCell);
             tr.appendChild(qtyCell);
             tr.appendChild(priceCell);
+            tr.appendChild(dateCell);
             saleTbody.appendChild(tr);
         });
 
         const totalTr = document.createElement("tr");
         totalTr.innerHTML =
-            '<td colspan="4" style="padding:7px 6px;text-align:right;font-weight:bold;color:#4ade80;border:' + gridBorder + ';">סה"כ</td>' +
+            '<td colspan="3" style="padding:7px 6px;text-align:right;font-weight:bold;color:#4ade80;border:' + gridBorder + ';">סה"כ</td>' +
             '<td style="padding:7px 6px;text-align:right;font-weight:bold;color:#4ade80;white-space:nowrap;border:' + gridBorder + ';">' +
-            Number(sale.total_amount || 0).toFixed(2) + ' ₪</td>';
+            Number(sale.total_amount || 0).toFixed(2) + ' ₪</td>' +
+            '<td style="border:' + gridBorder + ';"></td>';
         saleTbody.appendChild(totalTr);
 
         saleTable.appendChild(saleTbody);
