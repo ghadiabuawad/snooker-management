@@ -625,12 +625,11 @@ function askWhoPays(playerNames) {
     });
 }
 
-function toDatetimeLocalValue(isoString) {
+function toTimeInputValue(isoString) {
     if (!isoString) return "";
     const d = new Date(isoString);
     const pad = function(n) { return String(n).padStart(2, "0"); };
-    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) +
-        "T" + pad(d.getHours()) + ":" + pad(d.getMinutes());
+    return pad(d.getHours()) + ":" + pad(d.getMinutes());
 }
 
 function openEditTableModal(table, players) {
@@ -670,9 +669,9 @@ function openEditTableModal(table, players) {
     box.appendChild(timeLabel);
 
     const timeInput = document.createElement("input");
-    timeInput.type = "datetime-local";
-    timeInput.value = toDatetimeLocalValue(table.started_at);
-    timeInput.style.cssText = "width:100%;margin-bottom:20px;";
+    timeInput.type = "time";
+    timeInput.value = toTimeInputValue(table.started_at);
+    timeInput.style.cssText = "width:100%;margin-bottom:20px;text-align:center;font-size:18px;";
     box.appendChild(timeInput);
 
     const saveBtn = document.createElement("button");
@@ -703,7 +702,10 @@ function openEditTableModal(table, players) {
         }
 
         if (timeInput.value) {
-            const newStartedAt = new Date(timeInput.value).toISOString();
+            const baseDate = table.started_at ? new Date(table.started_at) : new Date();
+            const [hours, minutes] = timeInput.value.split(":").map(Number);
+            baseDate.setHours(hours, minutes, 0, 0);
+            const newStartedAt = baseDate.toISOString();
             if (newStartedAt !== table.started_at) {
                 const { error } = await db
                     .from("game_tables")
