@@ -711,15 +711,48 @@ function openEditTableModal(table, players) {
     removePlayerBtn.type = "button";
     removePlayerBtn.textContent = "- הסר שחקן";
     removePlayerBtn.style.cssText =
-        "width:100%;padding:10px;margin-bottom:15px;" +
+        "width:100%;padding:10px;margin-bottom:10px;" +
         "background:#374151;color:white;font-weight:bold;font-size:14px;";
-    removePlayerBtn.addEventListener("click", function() {
-        const entry = nameInputs.pop();
-        if (!entry) return;
+    box.appendChild(removePlayerBtn);
+
+    const removeListContainer = document.createElement("div");
+    removeListContainer.style.cssText = "display:none;margin-bottom:15px;";
+    box.appendChild(removeListContainer);
+
+    function removeEntry(entry) {
+        const index = nameInputs.indexOf(entry);
+        if (index === -1) return;
+        nameInputs.splice(index, 1);
         if (entry.id !== null) removedPlayerIds.push(entry.id);
         entry.input.remove();
+        removeListContainer.style.display = "none";
+        removeListContainer.innerHTML = "";
+    }
+
+    removePlayerBtn.addEventListener("click", function() {
+        if (removeListContainer.style.display === "block") {
+            removeListContainer.style.display = "none";
+            removeListContainer.innerHTML = "";
+            return;
+        }
+
+        if (nameInputs.length === 0) return;
+
+        removeListContainer.innerHTML = "";
+        nameInputs.forEach(function(entry) {
+            const itemBtn = document.createElement("button");
+            itemBtn.type = "button";
+            itemBtn.textContent = "✕ " + (entry.input.value.trim() || "שחקן ללא שם");
+            itemBtn.style.cssText =
+                "width:100%;padding:10px;margin-bottom:6px;" +
+                "background:#7f1d1d;color:white;font-weight:bold;font-size:14px;";
+            itemBtn.addEventListener("click", function() {
+                removeEntry(entry);
+            });
+            removeListContainer.appendChild(itemBtn);
+        });
+        removeListContainer.style.display = "block";
     });
-    box.appendChild(removePlayerBtn);
 
     const timeLabel = document.createElement("div");
     timeLabel.style.cssText = "font-weight:bold;margin:15px 0 10px;";
