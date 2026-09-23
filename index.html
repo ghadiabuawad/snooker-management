@@ -1577,14 +1577,37 @@ function renderBarNames() {
 
         const nameBtn = document.createElement("button");
         nameBtn.type = "button";
-        nameBtn.textContent =
-            "👤 " + name +
-            (total > 0 ? " (" + total.toFixed(2) + " ₪)" : "");
         nameBtn.style.cssText =
-            "flex:1;padding:12px 14px;background:#2563eb;color:white;font-weight:bold;text-align:right;";
+            "flex:1;display:flex;align-items:center;justify-content:space-between;gap:8px;" +
+            "padding:12px 14px;background:#2563eb;color:white;font-weight:bold;";
         nameBtn.addEventListener("click", function() {
             openTabModal(name);
         });
+
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = "👤 " + name;
+        nameBtn.appendChild(nameSpan);
+
+        const rightSide = document.createElement("span");
+        rightSide.style.cssText = "display:flex;align-items:center;gap:6px;";
+
+        const itemsSummary = buildItemsSummary(name);
+        if (itemsSummary) {
+            const itemsBadge = document.createElement("span");
+            itemsBadge.style.cssText =
+                "background:#f3f4f6;color:#111827;font-size:12px;font-weight:normal;" +
+                "padding:3px 7px;border-radius:5px;";
+            itemsBadge.textContent = itemsSummary;
+            rightSide.appendChild(itemsBadge);
+        }
+
+        if (total > 0) {
+            const totalSpan = document.createElement("span");
+            totalSpan.textContent = total.toFixed(2) + " ₪";
+            rightSide.appendChild(totalSpan);
+        }
+
+        nameBtn.appendChild(rightSide);
         wrapper.appendChild(nameBtn);
 
         if (total === 0 && !isActiveTablePlayer(name)) {
@@ -1606,16 +1629,6 @@ function renderBarNames() {
         }
 
         container.appendChild(wrapper);
-
-        const itemsSummary = buildItemsSummary(name);
-        if (itemsSummary) {
-            const summaryBadge = document.createElement("div");
-            summaryBadge.style.cssText =
-                "background:#f3f4f6;color:#111827;font-size:13px;" +
-                "padding:6px 10px;border-radius:6px;margin-top:4px;";
-            summaryBadge.textContent = itemsSummary;
-            container.appendChild(summaryBadge);
-        }
 
         barNamesList.appendChild(container);
     });
