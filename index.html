@@ -725,6 +725,7 @@ function openEditTableModal(table, players) {
         function(delta) { minuteValue = ((minuteValue + delta) % 60 + 60) % 60; }
     );
 
+    timeRow.style.direction = "ltr";
     timeRow.appendChild(hourStepper);
     timeRow.appendChild(separator);
     timeRow.appendChild(minuteStepper);
