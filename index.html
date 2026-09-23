@@ -1563,7 +1563,7 @@ addBarNameBtn.addEventListener("click", function() {
 });
 
 function openTabModal(name) {
-    let activeCategory = PRODUCT_CATEGORIES[0].key;
+    let activeCategory = null;
 
     const overlay = document.createElement("div");
     overlay.style.cssText =
@@ -1655,6 +1655,9 @@ function openTabModal(name) {
 
     function renderProducts() {
         productsGrid.innerHTML = "";
+
+        if (!activeCategory) return;
+
         const items = products.filter(function(product) {
             return product.category === activeCategory;
         });
@@ -1709,7 +1712,7 @@ function openTabModal(name) {
                 "padding:10px 4px;font-size:13px;font-weight:bold;color:white;" +
                 (category.key === activeCategory ? "background:#2563eb;" : "background:#374151;");
             btn.addEventListener("click", function() {
-                activeCategory = category.key;
+                activeCategory = (activeCategory === category.key) ? null : category.key;
                 renderTabs();
                 renderProducts();
             });
