@@ -2943,32 +2943,29 @@ async function loadSalesHistory() {
        SALES TABLE
     ========================= */
 
-    const salesTable = document.createElement("table");
-    salesTable.style.cssText = "width:100%;border-collapse:collapse;font-size:13px;";
+    const salesTableWrapper = document.createElement("div");
+    salesTableWrapper.style.cssText = "overflow-x:auto;";
 
-    const salesThead = document.createElement("thead");
-    salesThead.innerHTML = `
-        <tr style="background:#18212f;">
-            <th style="padding:10px 6px;text-align:right;border-bottom:2px solid #374151;white-space:nowrap;">תאריך</th>
-            <th style="padding:10px 6px;text-align:right;border-bottom:2px solid #374151;">שם</th>
-            <th style="padding:10px 6px;text-align:right;border-bottom:2px solid #374151;">פריט</th>
-            <th style="padding:10px 6px;text-align:center;border-bottom:2px solid #374151;">כמות</th>
-            <th style="padding:10px 6px;text-align:right;border-bottom:2px solid #374151;">מחיר</th>
-        </tr>
-    `;
-    salesTable.appendChild(salesThead);
-
-    const salesTbody = document.createElement("tbody");
+    const gridBorder = "1px solid #ffffff";
 
     data.forEach(function(sale, groupIndex) {
 
-        if (groupIndex > 0) {
-            const spacerTr = document.createElement("tr");
-            spacerTr.innerHTML = '<td colspan="5" style="padding:0;height:14px;border:none;background:transparent;"></td>';
-            salesTbody.appendChild(spacerTr);
-        }
+        const saleTable = document.createElement("table");
+        saleTable.style.cssText = "width:100%;border-collapse:collapse;font-size:13px;margin-bottom:20px;border:" + gridBorder + ";";
 
-        const groupBg = groupIndex % 2 === 0 ? "#1c2740" : "#101724";
+        const saleThead = document.createElement("thead");
+        saleThead.innerHTML = `
+            <tr style="background:#18212f;">
+                <th style="padding:10px 6px;text-align:right;border:${gridBorder};white-space:nowrap;">תאריך</th>
+                <th style="padding:10px 6px;text-align:right;border:${gridBorder};">שם</th>
+                <th style="padding:10px 6px;text-align:right;border:${gridBorder};">פריט</th>
+                <th style="padding:10px 6px;text-align:center;border:${gridBorder};">כמות</th>
+                <th style="padding:10px 6px;text-align:right;border:${gridBorder};">מחיר</th>
+            </tr>
+        `;
+        saleTable.appendChild(saleThead);
+
+        const saleTbody = document.createElement("tbody");
 
         const saleDate = new Date(sale.closed_at || sale.created_at);
         const dateText =
@@ -3002,33 +2999,27 @@ async function loadSalesHistory() {
             rows.push({ item: "-", qty: "-", price: Number(sale.total_amount || 0) });
         }
 
-        const frameSide = "border-left:3px solid #fbbf24;border-right:3px solid #fbbf24;background:" + groupBg + ";";
-        const topAccent = "border-top:3px solid #fbbf24;";
-        const bottomAccent = "border-bottom:3px solid #fbbf24;";
-
         rows.forEach(function(row, index) {
             const tr = document.createElement("tr");
 
-            const topBorder = index === 0 ? topAccent : "";
-
             const dateCell = document.createElement("td");
-            dateCell.style.cssText = "padding:7px 6px;color:#9ca3af;font-size:12px;white-space:nowrap;" + frameSide + topBorder;
+            dateCell.style.cssText = "padding:7px 6px;color:#9ca3af;font-size:12px;white-space:nowrap;border:" + gridBorder + ";";
             dateCell.textContent = index === 0 ? dateText : "";
 
             const nameCell = document.createElement("td");
-            nameCell.style.cssText = "padding:7px 6px;font-weight:bold;background:" + groupBg + ";" + topBorder;
+            nameCell.style.cssText = "padding:7px 6px;font-weight:bold;border:" + gridBorder + ";";
             nameCell.textContent = index === 0 ? (sale.customer_name || "ללא שם") : "";
 
             const itemCell = document.createElement("td");
-            itemCell.style.cssText = "padding:7px 6px;background:" + groupBg + ";" + topBorder;
+            itemCell.style.cssText = "padding:7px 6px;border:" + gridBorder + ";";
             itemCell.textContent = row.item;
 
             const qtyCell = document.createElement("td");
-            qtyCell.style.cssText = "padding:7px 6px;text-align:center;color:#9ca3af;background:" + groupBg + ";" + topBorder;
+            qtyCell.style.cssText = "padding:7px 6px;text-align:center;color:#9ca3af;border:" + gridBorder + ";";
             qtyCell.textContent = row.qty;
 
             const priceCell = document.createElement("td");
-            priceCell.style.cssText = "padding:7px 6px;text-align:right;white-space:nowrap;" + frameSide + topBorder;
+            priceCell.style.cssText = "padding:7px 6px;text-align:right;white-space:nowrap;border:" + gridBorder + ";";
             priceCell.textContent = Number(row.price).toFixed(2) + " ₪";
 
             tr.appendChild(dateCell);
@@ -3036,22 +3027,19 @@ async function loadSalesHistory() {
             tr.appendChild(itemCell);
             tr.appendChild(qtyCell);
             tr.appendChild(priceCell);
-            salesTbody.appendChild(tr);
+            saleTbody.appendChild(tr);
         });
 
         const totalTr = document.createElement("tr");
         totalTr.innerHTML =
-            '<td colspan="4" style="padding:7px 6px;text-align:right;font-weight:bold;color:#4ade80;background:' + groupBg + ';border-left:3px solid #fbbf24;' + bottomAccent + '">סה"כ</td>' +
-            '<td style="padding:7px 6px;text-align:right;font-weight:bold;color:#4ade80;white-space:nowrap;background:' + groupBg + ';border-right:3px solid #fbbf24;' + bottomAccent + '">' +
+            '<td colspan="4" style="padding:7px 6px;text-align:right;font-weight:bold;color:#4ade80;border:' + gridBorder + ';">סה"כ</td>' +
+            '<td style="padding:7px 6px;text-align:right;font-weight:bold;color:#4ade80;white-space:nowrap;border:' + gridBorder + ';">' +
             Number(sale.total_amount || 0).toFixed(2) + ' ₪</td>';
-        salesTbody.appendChild(totalTr);
+        saleTbody.appendChild(totalTr);
+
+        saleTable.appendChild(saleTbody);
+        salesTableWrapper.appendChild(saleTable);
     });
-
-    salesTable.appendChild(salesTbody);
-
-    const salesTableWrapper = document.createElement("div");
-    salesTableWrapper.style.cssText = "overflow-x:auto;";
-    salesTableWrapper.appendChild(salesTable);
 
     salesHistory.appendChild(salesTableWrapper);
 
