@@ -1575,14 +1575,6 @@ function getTabTotal(name) {
     }, 0);
 }
 
-function isActiveTablePlayer(name) {
-    return gameTables.some(function(table) {
-        return (table.table_players || []).some(function(player) {
-            return player.player_name === name;
-        });
-    });
-}
-
 function getAllBarNames() {
     const names = new Set(barNames);
 
@@ -1670,24 +1662,6 @@ function renderBarNames() {
         }
 
         wrapper.appendChild(nameBtn);
-
-        if (total === 0 && !isActiveTablePlayer(name)) {
-            const removeBtn = document.createElement("button");
-            removeBtn.type = "button";
-            removeBtn.textContent = "✕";
-            removeBtn.style.cssText = "padding:10px;background:#4b5563;color:white;";
-            removeBtn.addEventListener("click", async function() {
-                const { error } = await db.from("bar_tabs").delete().eq("name", name);
-                if (error) {
-                    console.error("Remove bar name error:", error);
-                    alert("שגיאה בהסרת השם: " + error.message);
-                    return;
-                }
-                barNames = barNames.filter(function(n) { return n !== name; });
-                renderBarNames();
-            });
-            wrapper.appendChild(removeBtn);
-        }
 
         container.appendChild(wrapper);
 
