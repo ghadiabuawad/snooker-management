@@ -387,6 +387,7 @@ let gameTables = [];
 const gameTablesList = document.getElementById("gameTablesList");
 const gameTableDisplays = new Map();
 const gameTableSaves = new Set();
+const draftPlayerNames = new Map();
 
 let products = [];
 let tabOrders = [];
@@ -1223,7 +1224,8 @@ updateGameTableTimer();
       }
   );
 
-    const playerNames = [];
+    if (!draftPlayerNames.has(table.id)) draftPlayerNames.set(table.id, []);
+    const playerNames = draftPlayerNames.get(table.id);
     const playersListEl = details.querySelector(".table-players-list");
     const addPlayerRow = details.querySelector(".add-player-row");
 
@@ -1315,6 +1317,7 @@ updateGameTableTimer();
     }
 
     showAddPlayerButton();
+    renderPlayerChips();
 
        const startTableGameButton =
     details.querySelector(".start-table-game");
@@ -1407,10 +1410,11 @@ startTableGameButton.addEventListener(
             return;
         }
 
+        draftPlayerNames.delete(table.id);
         await loadGameTables();
     }
 );
-        
+
     }
 );
          
