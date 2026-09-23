@@ -1684,7 +1684,7 @@ function openTabModal(name) {
     box.appendChild(totalLine);
 
     const tabsRow = document.createElement("div");
-    tabsRow.style.cssText = "display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:15px;";
+    tabsRow.style.cssText = "display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:15px;";
     box.appendChild(tabsRow);
 
     const productsGrid = document.createElement("div");
@@ -1811,6 +1811,37 @@ function openTabModal(name) {
             });
             tabsRow.appendChild(btn);
         });
+
+        const fifaBtn = document.createElement("button");
+        fifaBtn.type = "button";
+        fifaBtn.textContent = "🎮 FIFA";
+        fifaBtn.style.cssText =
+            "padding:10px 4px;font-size:13px;font-weight:bold;color:white;background:#16a34a;";
+        fifaBtn.addEventListener("click", async function() {
+            fifaBtn.disabled = true;
+            const { data, error } = await db
+                .from("tab_orders")
+                .insert({
+                    tab_name: name,
+                    category: "fifa",
+                    product_name: "FIFA",
+                    price: 20
+                })
+                .select()
+                .single();
+            fifaBtn.disabled = false;
+
+            if (error) {
+                console.error("Add FIFA order error:", error);
+                alert("שגיאה בהוספת FIFA: " + error.message);
+                return;
+            }
+
+            tabOrders.push(data);
+            renderItems();
+            renderBarNames();
+        });
+        tabsRow.appendChild(fifaBtn);
     }
 
     const closeTabBtn = document.createElement("button");
