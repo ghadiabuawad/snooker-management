@@ -968,6 +968,28 @@ async function loadGameTables() {
 
     gameTables = data || [];
 
+    const emptyTablesToReset = gameTables.filter(function(table) {
+        const hasPlayers = (table.table_players || []).length > 0;
+        return !hasPlayers && (table.running || table.started_at || Number(table.elapsed_seconds) > 0);
+    });
+
+    if (emptyTablesToReset.length > 0) {
+        const { error: resetError } = await db
+            .from("game_tables")
+            .update({ running: false, started_at: null, elapsed_seconds: 0 })
+            .in("id", emptyTablesToReset.map(function(t) { return t.id; }));
+
+        if (resetError) {
+            console.error("Auto-reset empty table error:", resetError);
+        } else {
+            emptyTablesToReset.forEach(function(table) {
+                table.running = false;
+                table.started_at = null;
+                table.elapsed_seconds = 0;
+            });
+        }
+    }
+
     renderGameTables();
 }
 
