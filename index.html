@@ -687,18 +687,21 @@ function askDebtItems(orders) {
 
         const title = document.createElement("div");
         title.style.cssText = "font-size:18px;font-weight:bold;margin-bottom:6px;";
-        title.textContent = "אילו פריטים לשמור כחוב?";
+        title.textContent = "אילו פריטים שמורים כחוב?";
         box.appendChild(title);
 
         const subtitle = document.createElement("div");
         subtitle.style.cssText = "color:#9ca3af;font-size:13px;margin-bottom:16px;";
-        subtitle.textContent = "אפשר לבחור כמה פריטים";
+        subtitle.textContent = "לחיצה מוסיפה או מסירה מהחוב";
         box.appendChild(subtitle);
 
         const list = document.createElement("div");
         list.style.cssText = "display:flex;flex-direction:column;gap:10px;margin-bottom:15px;";
 
         const selected = new Set();
+        orders.forEach(function(order, index) {
+            if (order.is_debt) selected.add(index);
+        });
 
         function close(result) {
             overlay.remove();
@@ -742,19 +745,15 @@ function askDebtItems(orders) {
 
         const confirmButton = document.createElement("button");
         confirmButton.type = "button";
-        confirmButton.textContent = "✓ שמור כחוב";
+        confirmButton.textContent = "✓ עדכון חוב";
         confirmButton.style.cssText =
             "width:100%;padding:12px;margin-bottom:10px;" +
             "background:#dc2626;color:white;font-weight:bold;font-size:16px;";
         confirmButton.addEventListener("click", function() {
-            if (selected.size === 0) {
-                alert("יש לבחור לפחות פריט אחד");
-                return;
-            }
             close(
-                Array.from(selected)
-                    .sort(function(a, b) { return a - b; })
-                    .map(function(index) { return orders[index]; })
+                orders.map(function(order, index) {
+                    return { order: order, isDebt: selected.has(index) };
+                })
             );
         });
         box.appendChild(confirmButton);
@@ -2325,34 +2324,59 @@ function openTabModal(name) {
         "width:100%;padding:12px;margin-bottom:10px;" +
         "background:#dc2626;color:white;font-weight:bold;font-size:15px;";
     debtBtn.addEventListener("click", async function() {
-        const availableOrders = getTabOrdersForName(name).filter(function(order) {
-            return !order.is_debt;
-        });
+        const currentOrders = getTabOrdersForName(name);
 
-        if (availableOrders.length === 0) {
-            alert("אין פריטים לסמן כחוב");
+        if (currentOrders.length === 0) {
+            alert("אין פריטים להזמנה הזו");
             return;
         }
 
-        const selectedOrders = await askDebtItems(availableOrders);
-        if (!selectedOrders) return;
+        const result = await askDebtItems(currentOrders);
+        if (!result) return;
+
+        const toMarkDebt = result.filter(function(entry) {
+            return entry.isDebt && !entry.order.is_debt;
+        }).map(function(entry) { return entry.order.id; });
+
+        const toUnmarkDebt = result.filter(function(entry) {
+            return !entry.isDebt && entry.order.is_debt;
+        }).map(function(entry) { return entry.order.id; });
 
         debtBtn.disabled = true;
-        const ids = selectedOrders.map(function(order) { return order.id; });
-        const { error } = await db
-            .from("tab_orders")
-            .update({ is_debt: true })
-            .in("id", ids);
-        debtBtn.disabled = false;
 
-        if (error) {
-            console.error("Mark debt error:", error);
-            alert("שגיאה בשמירת החוב: " + error.message);
-            return;
+        if (toMarkDebt.length > 0) {
+            const { error } = await db
+                .from("tab_orders")
+                .update({ is_debt: true })
+                .in("id", toMarkDebt);
+
+            if (error) {
+                console.error("Mark debt error:", error);
+                alert("שגיאה בשמירת החוב: " + error.message);
+                debtBtn.disabled = false;
+                return;
+            }
         }
 
+        if (toUnmarkDebt.length > 0) {
+            const { error } = await db
+                .from("tab_orders")
+                .update({ is_debt: false })
+                .in("id", toUnmarkDebt);
+
+            if (error) {
+                console.error("Unmark debt error:", error);
+                alert("שגיאה בהחזרת הפריט מהחוב: " + error.message);
+                debtBtn.disabled = false;
+                return;
+            }
+        }
+
+        debtBtn.disabled = false;
+
         tabOrders.forEach(function(order) {
-            if (ids.indexOf(order.id) !== -1) order.is_debt = true;
+            if (toMarkDebt.indexOf(order.id) !== -1) order.is_debt = true;
+            if (toUnmarkDebt.indexOf(order.id) !== -1) order.is_debt = false;
         });
 
         renderItems();
