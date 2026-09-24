@@ -2167,10 +2167,15 @@ function openTabModal(name) {
         "width:100%;padding:13px;margin-bottom:10px;" +
         "background:#f59e0b;color:#111827;font-weight:bold;font-size:16px;";
     closeTabBtn.addEventListener("click", async function() {
-        const total = getTabTotal(name);
+        const payableItems = getTabOrdersForName(name).filter(function(order) {
+            return !order.is_debt;
+        });
+        const total = payableItems.reduce(function(sum, order) {
+            return sum + Number(order.price || 0);
+        }, 0);
 
-        if (total <= 0) {
-            alert("אין הזמנות לחשבון הזה");
+        if (payableItems.length === 0) {
+            alert("אין הזמנות לתשלום לחשבון הזה (הכל בחוב)");
             return;
         }
 
@@ -2204,49 +2209,52 @@ function openTabModal(name) {
             return;
         }
 
-        const items = getTabOrdersForName(name);
-        if (items.length > 0) {
-            const { error: itemsError } = await db
-                .from("sale_items")
-                .insert(
-                    items.map(function(order) {
-                        return {
-                            sale_id: insertedSale.id,
-                            category: order.category,
-                            product_name: order.product_name,
-                            price: Number(order.price || 0)
-                        };
-                    })
-                );
-            if (itemsError) {
-                console.error("Save sale items error:", itemsError);
-            }
+        const { error: itemsError } = await db
+            .from("sale_items")
+            .insert(
+                payableItems.map(function(order) {
+                    return {
+                        sale_id: insertedSale.id,
+                        category: order.category,
+                        product_name: order.product_name,
+                        price: Number(order.price || 0)
+                    };
+                })
+            );
+        if (itemsError) {
+            console.error("Save sale items error:", itemsError);
         }
 
+        const payableIds = payableItems.map(function(order) { return order.id; });
         const { error: deleteError } = await db
             .from("tab_orders")
             .delete()
-            .eq("tab_name", name);
+            .in("id", payableIds);
 
         if (deleteError) {
             console.error("Clear tab orders error:", deleteError);
         }
 
-        const { error: barTabError } = await db
-            .from("bar_tabs")
-            .delete()
-            .eq("name", name);
-
-        if (barTabError) {
-            console.error("Clear bar tab error:", barTabError);
-        }
-
         tabOrders = tabOrders.filter(function(order) {
-            return order.tab_name !== name;
+            return payableIds.indexOf(order.id) === -1;
         });
-        barNames = barNames.filter(function(n) {
-            return n !== name;
-        });
+
+        const stillHasDebt = getDebtOrdersForName(name).length > 0;
+
+        if (!stillHasDebt) {
+            const { error: barTabError } = await db
+                .from("bar_tabs")
+                .delete()
+                .eq("name", name);
+
+            if (barTabError) {
+                console.error("Clear bar tab error:", barTabError);
+            }
+
+            barNames = barNames.filter(function(n) {
+                return n !== name;
+            });
+        }
 
         overlay.remove();
         renderBarNames();
