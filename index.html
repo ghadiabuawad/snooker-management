@@ -2182,7 +2182,20 @@ function openTabModal(name) {
         }, 0);
 
         if (payableItems.length === 0) {
-            alert("אין הזמנות לתשלום לחשבון הזה (הכל בחוב)");
+            const debtItems = getDebtOrdersForName(name);
+
+            if (debtItems.length === 0) {
+                alert("אין הזמנות לחשבון הזה");
+                return;
+            }
+
+            const confirmed = await customConfirm(
+                "כל הפריטים של " + name + " שמורים בחוב. לסגור את החשבון?"
+            );
+            if (!confirmed) return;
+
+            overlay.remove();
+            renderBarNames();
             return;
         }
 
