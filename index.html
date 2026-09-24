@@ -2027,6 +2027,13 @@ function openTabModal(name) {
                 removeBtn.textContent = "מחק";
                 removeBtn.style.cssText = "background:#7f1d1d;color:white;padding:6px 10px;";
                 removeBtn.addEventListener("click", async function() {
+                    if (order.is_debt) {
+                        const confirmed = await customConfirm(
+                            "הפריט הזה שמור כחוב. למחוק אותו לצמיתות?"
+                        );
+                        if (!confirmed) return;
+                    }
+
                     removeBtn.disabled = true;
                     const { error } = await db
                         .from("tab_orders")
