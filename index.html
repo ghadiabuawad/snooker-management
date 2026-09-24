@@ -1774,10 +1774,16 @@ function openDebtsModal() {
         box.appendChild(empty);
     } else {
         names.forEach(function(name) {
-            const row = document.createElement("div");
+            const row = document.createElement("button");
+            row.type = "button";
             row.style.cssText =
+                "display:block;width:100%;text-align:right;" +
                 "background:#111827;border:1px solid #dc2626;border-radius:8px;" +
-                "padding:12px 14px;margin-bottom:10px;";
+                "padding:12px 14px;margin-bottom:10px;color:white;";
+            row.addEventListener("click", function() {
+                overlay.remove();
+                openTabModal(name);
+            });
 
             const nameLine = document.createElement("div");
             nameLine.style.cssText =
@@ -1820,7 +1826,7 @@ function getAllBarNames() {
     });
 
     tabOrders.forEach(function(order) {
-        names.add(order.tab_name);
+        if (!order.is_debt) names.add(order.tab_name);
     });
 
     return Array.from(names);
@@ -2194,6 +2200,19 @@ function openTabModal(name) {
             );
             if (!confirmed) return;
 
+            const { error: barTabError } = await db
+                .from("bar_tabs")
+                .delete()
+                .eq("name", name);
+
+            if (barTabError) {
+                console.error("Clear bar tab error:", barTabError);
+            }
+
+            barNames = barNames.filter(function(n) {
+                return n !== name;
+            });
+
             overlay.remove();
             renderBarNames();
             return;
@@ -2259,22 +2278,18 @@ function openTabModal(name) {
             return payableIds.indexOf(order.id) === -1;
         });
 
-        const stillHasDebt = getDebtOrdersForName(name).length > 0;
+        const { error: barTabError } = await db
+            .from("bar_tabs")
+            .delete()
+            .eq("name", name);
 
-        if (!stillHasDebt) {
-            const { error: barTabError } = await db
-                .from("bar_tabs")
-                .delete()
-                .eq("name", name);
-
-            if (barTabError) {
-                console.error("Clear bar tab error:", barTabError);
-            }
-
-            barNames = barNames.filter(function(n) {
-                return n !== name;
-            });
+        if (barTabError) {
+            console.error("Clear bar tab error:", barTabError);
         }
+
+        barNames = barNames.filter(function(n) {
+            return n !== name;
+        });
 
         overlay.remove();
         renderBarNames();
