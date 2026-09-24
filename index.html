@@ -1383,7 +1383,7 @@ updateGameTableTimer();
                     return {
                         tab_name: payerName,
                         category: "game",
-                        product_name: "⏱ זמן משחק (" + formatTime(elapsedSeconds) + ")",
+                        product_name: "⏱ זמן משחק (" + formatTimeHM(elapsedSeconds) + ")",
                         price: Number(shareCost.toFixed(2))
                     };
                 })
@@ -3009,44 +3009,6 @@ checkLogin();
 ========================= */
 
     
-function formatTime(totalSeconds) {
-
-    totalSeconds =
-        Math.max(
-            0,
-            Math.floor(totalSeconds)
-        );
-
-
-    const hours =
-        Math.floor(
-            totalSeconds / 3600
-        );
-
-
-    const minutes =
-        Math.floor(
-            (totalSeconds % 3600) / 60
-        );
-
-
-    const seconds =
-        totalSeconds % 60;
-
-
-    return (
-
-        String(hours).padStart(2, "0")
-        + ":" +
-
-        String(minutes).padStart(2, "0")
-        + ":" +
-
-        String(seconds).padStart(2, "0")
-
-    );
-}
-
 function formatTimeHM(totalSeconds) {
     totalSeconds = Math.max(0, Math.floor(totalSeconds));
     const hours = Math.floor(totalSeconds / 3600);
@@ -3080,7 +3042,7 @@ function buildSalesReportRows(salesData) {
 
         if (Number(sale.game_cost || 0) > 0) {
             itemRows.push({
-                item: "⏱ זמן משחק (" + formatTime(Number(sale.elapsed_seconds || 0)) + ")",
+                item: "⏱ זמן משחק (" + formatTimeHM(Number(sale.elapsed_seconds || 0)) + ")",
                 qty: "-",
                 price: Number(sale.game_cost)
             });
@@ -3569,7 +3531,7 @@ async function loadSalesHistory() {
 
         if (Number(sale.game_cost || 0) > 0) {
             rows.push({
-                item: "⏱ זמן משחק (" + formatTime(Number(sale.elapsed_seconds || 0)) + ")",
+                item: "⏱ זמן משחק (" + formatTimeHM(Number(sale.elapsed_seconds || 0)) + ")",
                 qty: "-",
                 price: Number(sale.game_cost)
             });
