@@ -649,6 +649,112 @@ function askWhoPays(playerNames) {
     });
 }
 
+function askDebtItems(orders) {
+    return new Promise(function(resolve) {
+        const overlay = document.createElement("div");
+        overlay.style.cssText =
+            "position:fixed;inset:0;background:rgba(0,0,0,.65);" +
+            "display:flex;align-items:center;justify-content:center;" +
+            "z-index:1100;padding:20px;";
+
+        const box = document.createElement("div");
+        box.style.cssText =
+            "background:#1f2937;border:1px solid #374151;border-radius:12px;" +
+            "padding:24px;max-width:360px;width:100%;text-align:center;max-height:85vh;overflow-y:auto;";
+
+        const title = document.createElement("div");
+        title.style.cssText = "font-size:18px;font-weight:bold;margin-bottom:6px;";
+        title.textContent = "אילו פריטים לשמור כחוב?";
+        box.appendChild(title);
+
+        const subtitle = document.createElement("div");
+        subtitle.style.cssText = "color:#9ca3af;font-size:13px;margin-bottom:16px;";
+        subtitle.textContent = "אפשר לבחור כמה פריטים";
+        box.appendChild(subtitle);
+
+        const list = document.createElement("div");
+        list.style.cssText = "display:flex;flex-direction:column;gap:10px;margin-bottom:15px;";
+
+        const selected = new Set();
+
+        function close(result) {
+            overlay.remove();
+            resolve(result);
+        }
+
+        orders.forEach(function(order, index) {
+            const itemButton = document.createElement("button");
+            itemButton.type = "button";
+            itemButton.style.cssText =
+                "padding:13px;color:white;font-weight:bold;font-size:15px;" +
+                "border:2px solid transparent;background:#374151;";
+
+            function updateStyle() {
+                const label = order.product_name + " — " + Number(order.price).toFixed(2) + " ₪";
+                if (selected.has(index)) {
+                    itemButton.style.background = "#c2410c";
+                    itemButton.style.borderColor = "#f97316";
+                    itemButton.textContent = "✓ " + label;
+                } else {
+                    itemButton.style.background = "#374151";
+                    itemButton.style.borderColor = "transparent";
+                    itemButton.textContent = label;
+                }
+            }
+            updateStyle();
+
+            itemButton.addEventListener("click", function() {
+                if (selected.has(index)) {
+                    selected.delete(index);
+                } else {
+                    selected.add(index);
+                }
+                updateStyle();
+            });
+
+            list.appendChild(itemButton);
+        });
+
+        box.appendChild(list);
+
+        const confirmButton = document.createElement("button");
+        confirmButton.type = "button";
+        confirmButton.textContent = "✓ שמור כחוב";
+        confirmButton.style.cssText =
+            "width:100%;padding:12px;margin-bottom:10px;" +
+            "background:#c2410c;color:white;font-weight:bold;font-size:16px;";
+        confirmButton.addEventListener("click", function() {
+            if (selected.size === 0) {
+                alert("יש לבחור לפחות פריט אחד");
+                return;
+            }
+            close(
+                Array.from(selected)
+                    .sort(function(a, b) { return a - b; })
+                    .map(function(index) { return orders[index]; })
+            );
+        });
+        box.appendChild(confirmButton);
+
+        const cancelButton = document.createElement("button");
+        cancelButton.type = "button";
+        cancelButton.textContent = "ביטול";
+        cancelButton.style.cssText =
+            "width:100%;padding:11px;background:#4b5563;color:white;";
+        cancelButton.addEventListener("click", function() {
+            close(null);
+        });
+        box.appendChild(cancelButton);
+
+        overlay.appendChild(box);
+        overlay.addEventListener("click", function(event) {
+            if (event.target === overlay) close(null);
+        });
+
+        document.body.appendChild(overlay);
+    });
+}
+
 function toTimeInputValue(isoString) {
     if (!isoString) return "";
     const d = new Date(isoString);
@@ -1783,8 +1889,13 @@ function openTabModal(name) {
 
     const totalLine = document.createElement("div");
     totalLine.style.cssText =
-        "text-align:center;color:#4ade80;font-weight:bold;font-size:17px;margin-bottom:18px;";
+        "text-align:center;color:#4ade80;font-weight:bold;font-size:17px;margin-bottom:4px;";
     box.appendChild(totalLine);
+
+    const debtLine = document.createElement("div");
+    debtLine.style.cssText =
+        "text-align:center;color:#f97316;font-weight:bold;font-size:14px;margin-bottom:18px;";
+    box.appendChild(debtLine);
 
     const tabsRow = document.createElement("div");
     tabsRow.style.cssText = "display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:15px;";
@@ -1808,10 +1919,12 @@ function openTabModal(name) {
                 const row = document.createElement("div");
                 row.style.cssText =
                     "display:flex;justify-content:space-between;align-items:center;" +
-                    "gap:10px;background:#111827;padding:8px 10px;border-radius:7px;margin-bottom:6px;";
+                    "gap:10px;background:#111827;padding:8px 10px;border-radius:7px;margin-bottom:6px;" +
+                    (order.is_debt ? "border:1px solid #c2410c;" : "");
 
                 const text = document.createElement("span");
                 text.textContent =
+                    (order.is_debt ? "🔴 חוב — " : "") +
                     order.product_name + " — " + Number(order.price).toFixed(2) + " ₪";
 
                 const removeBtn = document.createElement("button");
@@ -1847,6 +1960,11 @@ function openTabModal(name) {
         }
 
         totalLine.textContent = 'סה"כ: ' + getTabTotal(name).toFixed(2) + " ₪";
+
+        const debtTotal = orders
+            .filter(function(order) { return order.is_debt; })
+            .reduce(function(sum, order) { return sum + Number(order.price || 0); }, 0);
+        debtLine.textContent = debtTotal > 0 ? "מתוכם בחוב: " + debtTotal.toFixed(2) + " ₪" : "";
     }
 
     function renderProducts() {
@@ -2039,6 +2157,47 @@ function openTabModal(name) {
         renderBarNames();
     });
 
+    const debtBtn = document.createElement("button");
+    debtBtn.type = "button";
+    debtBtn.textContent = "🔴 חוב";
+    debtBtn.style.cssText =
+        "width:100%;padding:12px;margin-bottom:10px;" +
+        "background:#c2410c;color:white;font-weight:bold;font-size:15px;";
+    debtBtn.addEventListener("click", async function() {
+        const availableOrders = getTabOrdersForName(name).filter(function(order) {
+            return !order.is_debt;
+        });
+
+        if (availableOrders.length === 0) {
+            alert("אין פריטים לסמן כחוב");
+            return;
+        }
+
+        const selectedOrders = await askDebtItems(availableOrders);
+        if (!selectedOrders) return;
+
+        debtBtn.disabled = true;
+        const ids = selectedOrders.map(function(order) { return order.id; });
+        const { error } = await db
+            .from("tab_orders")
+            .update({ is_debt: true })
+            .in("id", ids);
+        debtBtn.disabled = false;
+
+        if (error) {
+            console.error("Mark debt error:", error);
+            alert("שגיאה בשמירת החוב: " + error.message);
+            return;
+        }
+
+        tabOrders.forEach(function(order) {
+            if (ids.indexOf(order.id) !== -1) order.is_debt = true;
+        });
+
+        renderItems();
+        renderBarNames();
+    });
+
     const closeModalBtn = document.createElement("button");
     closeModalBtn.type = "button";
     closeModalBtn.textContent = "סגור חלון";
@@ -2048,6 +2207,7 @@ function openTabModal(name) {
     });
 
     box.appendChild(closeTabBtn);
+    box.appendChild(debtBtn);
     box.appendChild(closeModalBtn);
 
     overlay.appendChild(box);
