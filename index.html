@@ -1178,7 +1178,7 @@ const tableTimerStatus = details.querySelector(".table-timer-status");
 
 function updateGameTableTimer() {
     const state = tableTimerState(table);
-    gameTableTimer.textContent = formatTime(getElapsedSeconds(state));
+    gameTableTimer.textContent = formatTimeHM(getElapsedSeconds(state));
     gameTableCost.textContent = "עלות משחק: " + getGameCost(state).toFixed(2) + " ₪";
     const ballBadge = tableElement.querySelector(".ball-badge");
     if (ballBadge) ballBadge.classList.toggle("spinning", state.running);
@@ -2611,6 +2611,13 @@ function formatTime(totalSeconds) {
         String(seconds).padStart(2, "0")
 
     );
+}
+
+function formatTimeHM(totalSeconds) {
+    totalSeconds = Math.max(0, Math.floor(totalSeconds));
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    return String(hours).padStart(2, "0") + ":" + String(minutes).padStart(2, "0");
 }
 
 function buildSalesReportRows(salesData) {
