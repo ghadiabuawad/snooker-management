@@ -1737,6 +1737,12 @@ function getTabTotal(name) {
     }, 0);
 }
 
+function getPayableTotal(name) {
+    return getTabOrdersForName(name).reduce(function(sum, order) {
+        return order.is_debt ? sum : sum + Number(order.price || 0);
+    }, 0);
+}
+
 function getDebtNames() {
     const names = new Set();
     tabOrders.forEach(function(order) {
@@ -1927,6 +1933,23 @@ function buildItemsSummary(name) {
     }).join(", ");
 }
 
+function buildPayableItemsSummary(name) {
+    const orders = getTabOrdersForName(name).filter(function(order) {
+        return !order.is_debt;
+    });
+    if (orders.length === 0) return "";
+
+    const grouped = new Map();
+    orders.forEach(function(order) {
+        const key = order.product_name;
+        grouped.set(key, (grouped.get(key) || 0) + 1);
+    });
+
+    return Array.from(grouped.entries()).map(function(entry) {
+        return entry[1] > 1 ? entry[0] + " ×" + entry[1] : entry[0];
+    }).join(", ");
+}
+
 function renderBarNames() {
     barNamesList.innerHTML = "";
 
@@ -1947,7 +1970,7 @@ function renderBarNames() {
         const wrapper = document.createElement("div");
         wrapper.style.cssText = "display:flex;align-items:center;gap:4px;width:100%;";
 
-        const total = getTabTotal(name);
+        const total = getPayableTotal(name);
 
         const nameBtn = document.createElement("button");
         nameBtn.type = "button";
@@ -1965,7 +1988,7 @@ function renderBarNames() {
         const itemsWrap = document.createElement("span");
         itemsWrap.style.cssText = "display:flex;align-items:center;justify-content:center;";
 
-        const itemsSummary = buildItemsSummary(name);
+        const itemsSummary = buildPayableItemsSummary(name);
         if (itemsSummary) {
             const itemsBadge = document.createElement("span");
             itemsBadge.style.cssText =
