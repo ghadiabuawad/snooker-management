@@ -567,7 +567,7 @@ function customConfirm(message) {
     });
 }
 
-function askWhoPays(playerNames) {
+function askWhoPays(playerNames, options) {
     return new Promise(function(resolve) {
         const overlay = document.createElement("div");
         overlay.style.cssText =
@@ -582,12 +582,12 @@ function askWhoPays(playerNames) {
 
         const title = document.createElement("div");
         title.style.cssText = "font-size:18px;font-weight:bold;margin-bottom:6px;";
-        title.textContent = "מי משלם?";
+        title.textContent = (options && options.title) || "מי משלם?";
         box.appendChild(title);
 
         const subtitle = document.createElement("div");
         subtitle.style.cssText = "color:#9ca3af;font-size:13px;margin-bottom:16px;";
-        subtitle.textContent = "אפשר לבחור כמה שחקנים - הסכום יתחלק ביניהם בשווה";
+        subtitle.textContent = (options && options.subtitle) || "אפשר לבחור כמה שחקנים - הסכום יתחלק ביניהם בשווה";
         box.appendChild(subtitle);
 
         const list = document.createElement("div");
@@ -1782,10 +1782,68 @@ function openDebtsModal() {
         "background:#1f2937;border:1px solid #374151;border-radius:12px;" +
         "padding:22px;max-width:420px;width:100%;max-height:85vh;overflow-y:auto;";
 
+    const header = document.createElement("div");
+    header.style.cssText = "display:flex;align-items:center;justify-content:space-between;margin-bottom:15px;gap:8px;";
+    box.appendChild(header);
+
     const title = document.createElement("div");
-    title.style.cssText = "font-size:18px;font-weight:bold;margin-bottom:15px;text-align:center;";
+    title.style.cssText = "font-size:18px;font-weight:bold;";
     title.textContent = "💳 חובות";
-    box.appendChild(title);
+    header.appendChild(title);
+
+    const removeDebtBtn = document.createElement("button");
+    removeDebtBtn.type = "button";
+    removeDebtBtn.textContent = "🗑 הסרת חוב";
+    removeDebtBtn.style.cssText =
+        "padding:6px 10px;background:#7f1d1d;color:white;font-weight:bold;font-size:12px;white-space:nowrap;";
+    removeDebtBtn.addEventListener("click", async function() {
+        const debtNames = getDebtNames();
+
+        if (debtNames.length === 0) {
+            alert("אין חובות להסרה");
+            return;
+        }
+
+        const selectedNames = await askWhoPays(debtNames, {
+            title: "של מי להסיר את החוב?",
+            subtitle: "אפשר לבחור כמה לקוחות"
+        });
+        if (!selectedNames) return;
+
+        const confirmed = await customConfirm(
+            "למחוק לצמיתות את החוב של " + selectedNames.join(", ") + "?"
+        );
+        if (!confirmed) return;
+
+        removeDebtBtn.disabled = true;
+        const idsToDelete = [];
+        selectedNames.forEach(function(selectedName) {
+            getDebtOrdersForName(selectedName).forEach(function(order) {
+                idsToDelete.push(order.id);
+            });
+        });
+
+        const { error } = await db
+            .from("tab_orders")
+            .delete()
+            .in("id", idsToDelete);
+        removeDebtBtn.disabled = false;
+
+        if (error) {
+            console.error("Remove debt error:", error);
+            alert("שגיאה בהסרת החוב: " + error.message);
+            return;
+        }
+
+        tabOrders = tabOrders.filter(function(order) {
+            return idsToDelete.indexOf(order.id) === -1;
+        });
+
+        overlay.remove();
+        renderBarNames();
+        openDebtsModal();
+    });
+    header.appendChild(removeDebtBtn);
 
     const names = getDebtNames();
 
