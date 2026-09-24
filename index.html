@@ -1715,6 +1715,101 @@ function getTabTotal(name) {
     }, 0);
 }
 
+function getDebtNames() {
+    const names = new Set();
+    tabOrders.forEach(function(order) {
+        if (order.is_debt) names.add(order.tab_name);
+    });
+    return Array.from(names);
+}
+
+function getDebtOrdersForName(name) {
+    return tabOrders.filter(function(order) {
+        return order.tab_name === name && order.is_debt;
+    });
+}
+
+function getDebtTotal(name) {
+    return getDebtOrdersForName(name).reduce(function(sum, order) {
+        return sum + Number(order.price || 0);
+    }, 0);
+}
+
+function buildDebtItemsSummary(name) {
+    const orders = getDebtOrdersForName(name);
+    const grouped = new Map();
+    orders.forEach(function(order) {
+        const key = order.product_name;
+        grouped.set(key, (grouped.get(key) || 0) + 1);
+    });
+
+    return Array.from(grouped.entries()).map(function(entry) {
+        return entry[1] > 1 ? entry[0] + " ×" + entry[1] : entry[0];
+    }).join(", ");
+}
+
+function openDebtsModal() {
+    const overlay = document.createElement("div");
+    overlay.style.cssText =
+        "position:fixed;inset:0;background:rgba(0,0,0,.65);" +
+        "display:flex;align-items:center;justify-content:center;" +
+        "z-index:1000;padding:20px;";
+
+    const box = document.createElement("div");
+    box.style.cssText =
+        "background:#1f2937;border:1px solid #374151;border-radius:12px;" +
+        "padding:22px;max-width:420px;width:100%;max-height:85vh;overflow-y:auto;";
+
+    const title = document.createElement("div");
+    title.style.cssText = "font-size:18px;font-weight:bold;margin-bottom:15px;text-align:center;";
+    title.textContent = "💳 חובות";
+    box.appendChild(title);
+
+    const names = getDebtNames();
+
+    if (names.length === 0) {
+        const empty = document.createElement("div");
+        empty.style.cssText = "color:#9ca3af;text-align:center;margin-bottom:15px;";
+        empty.textContent = "אין חובות פתוחים";
+        box.appendChild(empty);
+    } else {
+        names.forEach(function(name) {
+            const row = document.createElement("div");
+            row.style.cssText =
+                "background:#111827;border:1px solid #dc2626;border-radius:8px;" +
+                "padding:12px 14px;margin-bottom:10px;";
+
+            const nameLine = document.createElement("div");
+            nameLine.style.cssText =
+                "display:flex;justify-content:space-between;align-items:center;font-weight:bold;margin-bottom:6px;";
+            nameLine.innerHTML =
+                '<span>👤 ' + escapeHtml(name) + '</span>' +
+                '<span style="color:#f87171;">' + getDebtTotal(name).toFixed(2) + ' ₪</span>';
+            row.appendChild(nameLine);
+
+            const itemsLine = document.createElement("div");
+            itemsLine.style.cssText = "color:#9ca3af;font-size:13px;";
+            itemsLine.textContent = buildDebtItemsSummary(name);
+            row.appendChild(itemsLine);
+
+            box.appendChild(row);
+        });
+    }
+
+    const closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.textContent = "סגור חלון";
+    closeBtn.style.cssText = "width:100%;padding:11px;background:#4b5563;color:white;";
+    closeBtn.addEventListener("click", function() { overlay.remove(); });
+    box.appendChild(closeBtn);
+
+    overlay.appendChild(box);
+    overlay.addEventListener("click", function(event) {
+        if (event.target === overlay) overlay.remove();
+    });
+    document.body.appendChild(overlay);
+}
+
 function getAllBarNames() {
     const names = new Set(barNames);
 
@@ -3188,6 +3283,17 @@ async function loadSalesHistory() {
     salesHistory.appendChild(
         totalBox
     );
+
+    const debtsBtn = document.createElement("button");
+    debtsBtn.type = "button";
+    debtsBtn.textContent = "💳 חובות";
+    debtsBtn.style.cssText =
+        "width:100%;padding:13px;margin-bottom:15px;" +
+        "background:#dc2626;color:white;font-weight:bold;font-size:15px;";
+    debtsBtn.addEventListener("click", function() {
+        openDebtsModal();
+    });
+    salesHistory.appendChild(debtsBtn);
 
 
     /* =========================
