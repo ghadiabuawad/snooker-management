@@ -1580,7 +1580,7 @@ async function loadBarTabs() {
     const { data, error } = await db
         .from("bar_tabs")
         .select("*")
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: false });
 
     if (error) {
         console.error("Load bar tabs error:", error);
@@ -1719,7 +1719,7 @@ addBarNameBtn.addEventListener("click", async function() {
         return;
     }
 
-    barNames.push(trimmed);
+    barNames.unshift(trimmed);
     renderBarNames();
 });
 
