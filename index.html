@@ -346,6 +346,29 @@ button:disabled{
 ">
 
     <button
+        id="debtsBtn"
+        type="button"
+        style="
+            width:100%;
+            padding:14px;
+            background:#dc2626;
+            color:white;
+            font-weight:bold;
+            font-size:16px;
+        "
+    >
+        💳 חובות
+    </button>
+
+</div>
+
+<div style="
+    margin-top:35px;
+    border-top:1px solid #374151;
+    padding-top:25px;
+">
+
+    <button
         id="salesHistoryBtn"
         style="
             width:100%;
@@ -3093,6 +3116,11 @@ const salesHistoryBtn =
 const salesHistory =
     document.getElementById("salesHistory");
 
+const debtsBtn = document.getElementById("debtsBtn");
+debtsBtn.addEventListener("click", function() {
+    openDebtsModal();
+});
+
 
 const SALES_HISTORY_PIN = "1234";
 
@@ -3326,17 +3354,6 @@ async function loadSalesHistory() {
     salesHistory.appendChild(
         totalBox
     );
-
-    const debtsBtn = document.createElement("button");
-    debtsBtn.type = "button";
-    debtsBtn.textContent = "💳 חובות";
-    debtsBtn.style.cssText =
-        "width:100%;padding:13px;margin-bottom:15px;" +
-        "background:#dc2626;color:white;font-weight:bold;font-size:15px;";
-    debtsBtn.addEventListener("click", function() {
-        openDebtsModal();
-    });
-    salesHistory.appendChild(debtsBtn);
 
 
     /* =========================
