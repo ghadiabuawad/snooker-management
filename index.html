@@ -2741,6 +2741,97 @@ function openRemoveProductModal() {
     renderList();
 }
 
+function openEditProductModal() {
+    let activeCategory = PRODUCT_CATEGORIES[0].key;
+
+    const shell = buildMenuModalShell("✏️ עריכת מוצרים בתפריט");
+
+    const list = document.createElement("div");
+    list.style.cssText = "margin-bottom:20px;";
+    shell.box.appendChild(list);
+
+    function renderList() {
+        list.innerHTML = "";
+        const items = products.filter(function(product) {
+            return product.category === activeCategory;
+        });
+
+        if (items.length === 0) {
+            const empty = document.createElement("div");
+            empty.style.cssText = "color:#9ca3af;text-align:center;";
+            empty.textContent = "אין מוצרים בקטגוריה הזו";
+            list.appendChild(empty);
+            return;
+        }
+
+        items.forEach(function(product) {
+            const row = document.createElement("div");
+            row.style.cssText =
+                "display:grid;grid-template-columns:1fr 90px auto;align-items:center;" +
+                "gap:8px;background:#111827;padding:8px 10px;border-radius:7px;margin-bottom:6px;";
+
+            const text = document.createElement("span");
+            text.textContent = product.name;
+
+            const priceInput = document.createElement("input");
+            priceInput.type = "number";
+            priceInput.min = "0";
+            priceInput.step = "0.5";
+            priceInput.value = Number(product.price);
+
+            const saveBtn = document.createElement("button");
+            saveBtn.type = "button";
+            saveBtn.textContent = "שמור";
+            saveBtn.style.cssText = "background:#16a34a;color:white;padding:6px 10px;font-weight:bold;";
+            saveBtn.addEventListener("click", async function() {
+                const newPrice = Number(priceInput.value);
+
+                if (!Number.isFinite(newPrice) || newPrice < 0) {
+                    alert("יש להזין מחיר תקין");
+                    return;
+                }
+
+                saveBtn.disabled = true;
+                const { error } = await db
+                    .from("products")
+                    .update({ price: newPrice })
+                    .eq("id", product.id);
+                saveBtn.disabled = false;
+
+                if (error) {
+                    console.error("Edit product price error:", error);
+                    alert("שגיאה בעדכון המחיר: " + error.message);
+                    return;
+                }
+
+                product.price = newPrice;
+            });
+
+            row.appendChild(text);
+            row.appendChild(priceInput);
+            row.appendChild(saveBtn);
+            list.appendChild(row);
+        });
+    }
+
+    addCategoryTabs(shell.tabsRow, function() { return activeCategory; }, function(key) {
+        activeCategory = key;
+        renderList();
+    });
+
+    const closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.textContent = "סגור";
+    closeBtn.style.cssText = "width:100%;padding:11px;background:#4b5563;color:white;";
+    closeBtn.addEventListener("click", function() {
+        shell.overlay.remove();
+    });
+    shell.box.appendChild(closeBtn);
+
+    document.body.appendChild(shell.overlay);
+    renderList();
+}
+
 function openHourlyPriceModal() {
     const currentPrice = gameTables.length > 0 ? Number(gameTables[0].hourly_price || 0) : 0;
 
@@ -2857,6 +2948,7 @@ function openSettingsModal() {
     addOption("💰 מחיר לשעת סנוקר", "#4b5563", openHourlyPriceModal);
     addOption("+ הוסף לתפריט", "#4b5563", openAddProductModal);
     addOption("- הסר מהתפריט", "#4b5563", openRemoveProductModal);
+    addOption("✏️ עריכת מוצרים", "#4b5563", openEditProductModal);
     addOption("🚪 התנתק", "#4b5563", handleLogout);
 
     const cancelBtn = document.createElement("button");
