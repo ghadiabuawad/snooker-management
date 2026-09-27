@@ -304,40 +304,48 @@ button:disabled{
         border-radius:12px;
         padding:15px;
         margin-bottom:15px;
+        text-align:center;
     ">
 
         <button
             id="customersToggleBtn"
             type="button"
             style="
-                width:100%;
-                padding:14px;
+                width:64px;
+                height:64px;
+                border-radius:50%;
                 background:#2563eb;
                 color:white;
-                font-weight:bold;
-                font-size:16px;
-                margin-bottom:12px;
+                font-size:28px;
+                display:flex;
+                align-items:center;
+                justify-content:center;
             "
         >
-            💰 קופה
+            💰
         </button>
 
-        <button
-            id="addBarNameBtn"
-            type="button"
-            style="
-                width:100%;
-                padding:12px;
-                background:#374151;
-                color:white;
-                font-weight:bold;
-                font-size:15px;
-            "
-        >
-            + הוסף שם
-        </button>
+        <div id="customersPanel" style="display:none;margin-top:15px;text-align:initial;">
 
-        <div id="barNamesList" style="display:none;flex-direction:column;gap:10px;margin-top:12px;"></div>
+            <button
+                id="addBarNameBtn"
+                type="button"
+                style="
+                    width:100%;
+                    padding:12px;
+                    background:#374151;
+                    color:white;
+                    font-weight:bold;
+                    font-size:15px;
+                    margin-bottom:12px;
+                "
+            >
+                + הוסף שם
+            </button>
+
+            <div id="barNamesList" style="display:flex;flex-direction:column;gap:10px;"></div>
+
+        </div>
 
     </div>
 
@@ -437,11 +445,11 @@ let barNames = [];
 const barNamesList = document.getElementById("barNamesList");
 const addBarNameBtn = document.getElementById("addBarNameBtn");
 const customersToggleBtn = document.getElementById("customersToggleBtn");
+const customersPanel = document.getElementById("customersPanel");
 
 customersToggleBtn.addEventListener("click", function() {
-    const isHidden = barNamesList.style.display === "none";
-    barNamesList.style.display = isHidden ? "flex" : "none";
-    customersToggleBtn.textContent = isHidden ? "✖ סגור קופה" : "💰 קופה";
+    const isHidden = customersPanel.style.display === "none";
+    customersPanel.style.display = isHidden ? "block" : "none";
 });
 
 const PRODUCT_CATEGORIES = [
