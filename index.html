@@ -298,13 +298,16 @@ button:disabled{
     padding-top:25px;
 ">
 
-    <div style="
+    <div id="customersBox" style="
         background:#1f2937;
         border:1px solid #374151;
         border-radius:12px;
         padding:15px;
         margin-bottom:15px;
         text-align:center;
+        width:100px;
+        margin-left:auto;
+        margin-right:auto;
     ">
 
         <button
@@ -452,10 +455,12 @@ const barNamesList = document.getElementById("barNamesList");
 const addBarNameBtn = document.getElementById("addBarNameBtn");
 const customersToggleBtn = document.getElementById("customersToggleBtn");
 const customersPanel = document.getElementById("customersPanel");
+const customersBox = document.getElementById("customersBox");
 
 customersToggleBtn.addEventListener("click", function() {
     const isHidden = customersPanel.style.display === "none";
     customersPanel.style.display = isHidden ? "block" : "none";
+    customersBox.style.width = isHidden ? "100%" : "100px";
 });
 
 const PRODUCT_CATEGORIES = [
