@@ -319,7 +319,7 @@ button:disabled{
                 margin-bottom:12px;
             "
         >
-            👤 לקוחות
+            💰 קופה
         </button>
 
         <button
@@ -337,9 +337,9 @@ button:disabled{
             + הוסף שם
         </button>
 
-    </div>
+        <div id="barNamesList" style="display:none;flex-direction:column;gap:10px;margin-top:12px;"></div>
 
-    <div id="barNamesList" style="display:none;flex-direction:column;gap:10px;margin-bottom:15px;"></div>
+    </div>
 
 </div>
 
@@ -441,7 +441,7 @@ const customersToggleBtn = document.getElementById("customersToggleBtn");
 customersToggleBtn.addEventListener("click", function() {
     const isHidden = barNamesList.style.display === "none";
     barNamesList.style.display = isHidden ? "flex" : "none";
-    customersToggleBtn.textContent = isHidden ? "✖ סגור לקוחות" : "👤 לקוחות";
+    customersToggleBtn.textContent = isHidden ? "✖ סגור קופה" : "💰 קופה";
 });
 
 const PRODUCT_CATEGORIES = [
