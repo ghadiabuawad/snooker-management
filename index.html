@@ -584,21 +584,18 @@ const VIRTUAL_KEYBOARD_LAYOUTS = {
     }
 };
 
-function openVirtualKeyboard(targetInput) {
+function openVirtualKeyboard(targetInput, options) {
+    const container = options && options.container;
     const langOrder = ["he", "en", "ar"];
     let langIndex = 0;
     let shiftOn = false;
 
-    const overlay = document.createElement("div");
-    overlay.style.cssText =
-        "position:fixed;inset:0;background:rgba(0,0,0,.5);" +
-        "display:flex;align-items:flex-end;justify-content:center;" +
-        "z-index:2000;";
-
+    let overlay = null;
     const kb = document.createElement("div");
-    kb.style.cssText =
-        "background:#1f2937;border-top:1px solid #374151;" +
-        "border-radius:16px 16px 0 0;padding:14px;width:100%;max-width:480px;";
+    kb.style.cssText = container
+        ? "background:#111827;border:1px solid #374151;border-radius:10px;padding:10px;width:100%;"
+        : "background:#1f2937;border-top:1px solid #374151;" +
+          "border-radius:16px 16px 0 0;padding:14px;width:100%;max-width:480px;";
 
     const keysWrap = document.createElement("div");
     keysWrap.style.cssText = "display:flex;flex-direction:column;gap:6px;margin-bottom:8px;";
@@ -683,11 +680,27 @@ function openVirtualKeyboard(targetInput) {
     doneBtn.textContent = "✓ סיום";
     doneBtn.style.cssText =
         "width:100%;padding:12px;background:#16a34a;color:white;font-weight:bold;border-radius:6px;";
+    kb.appendChild(doneBtn);
+
+    if (container) {
+        doneBtn.addEventListener("click", function() {
+            container.innerHTML = "";
+            container.style.display = "none";
+        });
+        container.innerHTML = "";
+        container.appendChild(kb);
+        container.style.display = "block";
+        return;
+    }
+
+    overlay = document.createElement("div");
+    overlay.style.cssText =
+        "position:fixed;inset:0;background:rgba(0,0,0,.5);" +
+        "display:flex;align-items:flex-end;justify-content:center;" +
+        "z-index:2000;";
     doneBtn.addEventListener("click", function() {
         overlay.remove();
     });
-    kb.appendChild(doneBtn);
-
     overlay.appendChild(kb);
     overlay.addEventListener("click", function(event) {
         if (event.target === overlay) overlay.remove();
@@ -1631,6 +1644,8 @@ updateGameTableTimer();
 
             <div class="table-players-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:15px;"></div>
 
+            <div class="keyboard-slot" style="display:none;margin-bottom:15px;"></div>
+
             <div class="add-player-row" style="margin-bottom:15px;"></div>
 
             <button
@@ -1753,13 +1768,20 @@ updateGameTableTimer();
     renderPlayerChips();
 
     const openKeyboardBtn = details.querySelector(".open-keyboard-btn");
+    const keyboardSlot = details.querySelector(".keyboard-slot");
     openKeyboardBtn.addEventListener("click", function() {
+        if (keyboardSlot.style.display === "block") {
+            keyboardSlot.innerHTML = "";
+            keyboardSlot.style.display = "none";
+            return;
+        }
+
         let currentInput = addPlayerRow.querySelector("input");
         if (!currentInput) {
             showAddPlayerForm();
             currentInput = addPlayerRow.querySelector("input");
         }
-        openVirtualKeyboard(currentInput);
+        openVirtualKeyboard(currentInput, { container: keyboardSlot });
     });
 
        const startTableGameButton =
