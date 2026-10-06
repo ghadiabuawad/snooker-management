@@ -556,6 +556,145 @@ async function changeTableTimer(table, action) {
     }
 }
 
+const VIRTUAL_KEYBOARD_LAYOUTS = {
+    he: {
+        label: "עב",
+        rows: [
+            ["/", "'", "ק", "ר", "א", "ט", "ו", "ן", "ם", "פ"],
+            ["ש", "ד", "ג", "כ", "ע", "י", "ח", "ל", "ך"],
+            ["ז", "ס", "ב", "ה", "נ", "מ", "צ", "ת", "ץ"]
+        ]
+    },
+    en: {
+        label: "EN",
+        shiftable: true,
+        rows: [
+            ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
+            ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
+            ["z", "x", "c", "v", "b", "n", "m"]
+        ]
+    },
+    ar: {
+        label: "عر",
+        rows: [
+            ["ض", "ص", "ث", "ق", "ف", "غ", "ع", "ه", "خ", "ح"],
+            ["ش", "س", "ي", "ب", "ل", "ا", "ت", "ن", "م", "ك"],
+            ["ئ", "ء", "ؤ", "ر", "لا", "ى", "ة", "و", "ز"]
+        ]
+    }
+};
+
+function openVirtualKeyboard(targetInput) {
+    const langOrder = ["he", "en", "ar"];
+    let langIndex = 0;
+    let shiftOn = false;
+
+    const overlay = document.createElement("div");
+    overlay.style.cssText =
+        "position:fixed;inset:0;background:rgba(0,0,0,.5);" +
+        "display:flex;align-items:flex-end;justify-content:center;" +
+        "z-index:2000;";
+
+    const kb = document.createElement("div");
+    kb.style.cssText =
+        "background:#1f2937;border-top:1px solid #374151;" +
+        "border-radius:16px 16px 0 0;padding:14px;width:100%;max-width:480px;";
+
+    const keysWrap = document.createElement("div");
+    keysWrap.style.cssText = "display:flex;flex-direction:column;gap:6px;margin-bottom:8px;";
+
+    function makeKey(label, onClick, flex) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = label;
+        btn.style.cssText =
+            "flex:" + (flex || 1) + ";padding:12px 0;background:#374151;color:white;" +
+            "font-weight:bold;font-size:15px;border-radius:6px;";
+        btn.addEventListener("click", function(event) {
+            event.preventDefault();
+            onClick();
+        });
+        return btn;
+    }
+
+    function insertChar(ch) {
+        const start = targetInput.selectionStart !== null ? targetInput.selectionStart : targetInput.value.length;
+        const end = targetInput.selectionEnd !== null ? targetInput.selectionEnd : targetInput.value.length;
+        const value = targetInput.value;
+        targetInput.value = value.slice(0, start) + ch + value.slice(end);
+        const pos = start + ch.length;
+        targetInput.focus();
+        targetInput.setSelectionRange(pos, pos);
+        targetInput.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+
+    function backspace() {
+        const start = targetInput.selectionStart !== null ? targetInput.selectionStart : targetInput.value.length;
+        const end = targetInput.selectionEnd !== null ? targetInput.selectionEnd : targetInput.value.length;
+        const value = targetInput.value;
+        const newStart = start === end ? Math.max(0, start - 1) : start;
+        targetInput.value = value.slice(0, newStart) + value.slice(end);
+        targetInput.focus();
+        targetInput.setSelectionRange(newStart, newStart);
+        targetInput.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+
+    function render() {
+        keysWrap.innerHTML = "";
+        const layout = VIRTUAL_KEYBOARD_LAYOUTS[langOrder[langIndex]];
+
+        layout.rows.forEach(function(row) {
+            const rowEl = document.createElement("div");
+            rowEl.style.cssText = "display:flex;gap:5px;justify-content:center;";
+            row.forEach(function(ch) {
+                const label = (layout.shiftable && shiftOn) ? ch.toUpperCase() : ch;
+                rowEl.appendChild(makeKey(label, function() { insertChar(label); }));
+            });
+            keysWrap.appendChild(rowEl);
+        });
+
+        const bottomRow = document.createElement("div");
+        bottomRow.style.cssText = "display:flex;gap:5px;justify-content:center;";
+
+        if (layout.shiftable) {
+            const shiftBtn = makeKey("⇧", function() {
+                shiftOn = !shiftOn;
+                render();
+            }, 1.4);
+            if (shiftOn) shiftBtn.style.background = "#2563eb";
+            bottomRow.appendChild(shiftBtn);
+        }
+
+        bottomRow.appendChild(makeKey("🌐 " + layout.label, function() {
+            langIndex = (langIndex + 1) % langOrder.length;
+            render();
+        }, 1.6));
+
+        bottomRow.appendChild(makeKey("␣", function() { insertChar(" "); }, 4));
+        bottomRow.appendChild(makeKey("⌫", backspace, 1.4));
+        keysWrap.appendChild(bottomRow);
+    }
+
+    render();
+    kb.appendChild(keysWrap);
+
+    const doneBtn = document.createElement("button");
+    doneBtn.type = "button";
+    doneBtn.textContent = "✓ סיום";
+    doneBtn.style.cssText =
+        "width:100%;padding:12px;background:#16a34a;color:white;font-weight:bold;border-radius:6px;";
+    doneBtn.addEventListener("click", function() {
+        overlay.remove();
+    });
+    kb.appendChild(doneBtn);
+
+    overlay.appendChild(kb);
+    overlay.addEventListener("click", function(event) {
+        if (event.target === overlay) overlay.remove();
+    });
+    document.body.appendChild(overlay);
+}
+
 function customConfirm(message) {
     return new Promise(function(resolve) {
         const overlay = document.createElement("div");
@@ -1478,9 +1617,17 @@ updateGameTableTimer();
 }
         
         details.innerHTML = `
-            <div style="font-weight:bold; margin-bottom:12px;">
+            <div style="font-weight:bold; margin-bottom:8px;">
                 שחקנים
             </div>
+
+            <button type="button" class="open-keyboard-btn" style="
+                padding:7px 12px;
+                background:#374151;
+                color:white;
+                font-size:18px;
+                margin-bottom:12px;
+            ">⌨️</button>
 
             <div class="table-players-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:15px;"></div>
 
@@ -1604,6 +1751,16 @@ updateGameTableTimer();
 
     showAddPlayerButton();
     renderPlayerChips();
+
+    const openKeyboardBtn = details.querySelector(".open-keyboard-btn");
+    openKeyboardBtn.addEventListener("click", function() {
+        let currentInput = addPlayerRow.querySelector("input");
+        if (!currentInput) {
+            showAddPlayerForm();
+            currentInput = addPlayerRow.querySelector("input");
+        }
+        openVirtualKeyboard(currentInput);
+    });
 
        const startTableGameButton =
     details.querySelector(".start-table-game");
