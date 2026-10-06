@@ -1630,17 +1630,12 @@ updateGameTableTimer();
 }
         
         details.innerHTML = `
-            <div style="font-weight:bold; margin-bottom:8px;">
-                שחקנים
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;">
+                <div style="font-weight:bold;white-space:nowrap;">
+                    שחקנים
+                </div>
+                <div class="player-name-slot" style="flex:1;display:flex;justify-content:flex-end;"></div>
             </div>
-
-            <button type="button" class="open-keyboard-btn" style="
-                padding:7px 12px;
-                background:#374151;
-                color:white;
-                font-size:18px;
-                margin-bottom:12px;
-            ">⌨️</button>
 
             <div class="table-players-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:15px;"></div>
 
@@ -1676,6 +1671,8 @@ updateGameTableTimer();
     const playerNames = draftPlayerNames.get(table.id);
     const playersListEl = details.querySelector(".table-players-list");
     const addPlayerRow = details.querySelector(".add-player-row");
+    const playerNameSlot = details.querySelector(".player-name-slot");
+    const keyboardSlot = details.querySelector(".keyboard-slot");
 
     function renderPlayerChips() {
         playersListEl.innerHTML = "";
@@ -1703,8 +1700,15 @@ updateGameTableTimer();
         });
     }
 
+    function closeKeyboard() {
+        keyboardSlot.innerHTML = "";
+        keyboardSlot.style.display = "none";
+    }
+
     function showAddPlayerButton() {
         addPlayerRow.innerHTML = "";
+        playerNameSlot.innerHTML = "";
+        closeKeyboard();
 
         const addPlayerBtn = document.createElement("button");
         addPlayerBtn.type = "button";
@@ -1719,12 +1723,34 @@ updateGameTableTimer();
 
     function showAddPlayerForm() {
         addPlayerRow.innerHTML = "";
+        playerNameSlot.innerHTML = "";
+        closeKeyboard();
+
+        const inputRow = document.createElement("div");
+        inputRow.style.cssText = "display:flex;gap:6px;width:100%;";
 
         const input = document.createElement("input");
         input.type = "text";
         input.placeholder = "שם השחקן";
         input.inputMode = "none";
-        input.style.cssText = "width:100%;margin-bottom:8px;";
+        input.style.cssText = "flex:1;min-width:0;";
+
+        const keyboardBtn = document.createElement("button");
+        keyboardBtn.type = "button";
+        keyboardBtn.textContent = "⌨️";
+        keyboardBtn.style.cssText =
+            "padding:7px 10px;background:#374151;color:white;font-size:18px;";
+        keyboardBtn.addEventListener("click", function() {
+            if (keyboardSlot.style.display === "block") {
+                closeKeyboard();
+                return;
+            }
+            openVirtualKeyboard(input, { container: keyboardSlot });
+        });
+
+        inputRow.appendChild(input);
+        inputRow.appendChild(keyboardBtn);
+        playerNameSlot.appendChild(inputRow);
 
         const actions = document.createElement("div");
         actions.style.cssText = "display:flex;gap:8px;";
@@ -1760,30 +1786,12 @@ updateGameTableTimer();
 
         actions.appendChild(confirmBtn);
         actions.appendChild(cancelBtn);
-        addPlayerRow.appendChild(input);
         addPlayerRow.appendChild(actions);
         input.focus();
     }
 
     showAddPlayerButton();
     renderPlayerChips();
-
-    const openKeyboardBtn = details.querySelector(".open-keyboard-btn");
-    const keyboardSlot = details.querySelector(".keyboard-slot");
-    openKeyboardBtn.addEventListener("click", function() {
-        if (keyboardSlot.style.display === "block") {
-            keyboardSlot.innerHTML = "";
-            keyboardSlot.style.display = "none";
-            return;
-        }
-
-        let currentInput = addPlayerRow.querySelector("input");
-        if (!currentInput) {
-            showAddPlayerForm();
-            currentInput = addPlayerRow.querySelector("input");
-        }
-        openVirtualKeyboard(currentInput, { container: keyboardSlot });
-    });
 
        const startTableGameButton =
     details.querySelector(".start-table-game");
