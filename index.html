@@ -995,21 +995,58 @@ function openEditTableModal(table, players) {
     title.textContent = "✏️ עריכת שולחן " + table.table_number;
     box.appendChild(title);
 
+    const nameHeaderRow = document.createElement("div");
+    nameHeaderRow.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;";
+    box.appendChild(nameHeaderRow);
+
     const nameLabel = document.createElement("div");
-    nameLabel.style.cssText = "font-weight:bold;margin-bottom:10px;";
+    nameLabel.style.cssText = "font-weight:bold;white-space:nowrap;";
     nameLabel.textContent = "שמות שחקנים";
-    box.appendChild(nameLabel);
+    nameHeaderRow.appendChild(nameLabel);
+
+    const keyboardBtn = document.createElement("button");
+    keyboardBtn.type = "button";
+    keyboardBtn.textContent = "⌨️";
+    keyboardBtn.style.cssText =
+        "padding:7px 10px;background:#374151;color:white;font-size:18px;";
+    nameHeaderRow.appendChild(keyboardBtn);
 
     const namesContainer = document.createElement("div");
     box.appendChild(namesContainer);
+
+    let activeNameInput = null;
+
+    function trackActiveInput(input) {
+        input.addEventListener("focus", function() {
+            activeNameInput = input;
+        });
+    }
 
     const nameInputs = players.map(function(player) {
         const input = document.createElement("input");
         input.type = "text";
         input.value = player.player_name;
+        input.inputMode = "none";
         input.style.cssText = "width:100%;margin-bottom:10px;";
+        trackActiveInput(input);
         namesContainer.appendChild(input);
         return { id: player.id, input: input, original: player.player_name };
+    });
+
+    activeNameInput = nameInputs.length > 0 ? nameInputs[0].input : null;
+
+    const keyboardSlot = document.createElement("div");
+    keyboardSlot.style.cssText = "display:none;margin-bottom:10px;";
+    box.appendChild(keyboardSlot);
+
+    keyboardBtn.addEventListener("click", function() {
+        if (keyboardSlot.style.display === "block") {
+            keyboardSlot.innerHTML = "";
+            keyboardSlot.style.display = "none";
+            return;
+        }
+        if (!activeNameInput) return;
+        openVirtualKeyboard(activeNameInput, { container: keyboardSlot });
     });
 
     const removedPlayerIds = [];
@@ -1024,9 +1061,12 @@ function openEditTableModal(table, players) {
         const input = document.createElement("input");
         input.type = "text";
         input.placeholder = "שם שחקן חדש";
+        input.inputMode = "none";
         input.style.cssText = "width:100%;margin-bottom:10px;";
+        trackActiveInput(input);
         namesContainer.appendChild(input);
         nameInputs.push({ id: null, input: input, original: "" });
+        activeNameInput = input;
         input.focus();
     });
     box.appendChild(addPlayerBtn);
