@@ -1262,7 +1262,7 @@ function openEditTableModal(table, players) {
                 hadError = true;
             }
         } else {
-            const baseDate = table.started_at ? new Date(table.started_at) : new Date();
+            const baseDate = new Date();
             baseDate.setHours(hourValue, minuteValue, 0, 0);
             if (baseDate.getTime() > Date.now()) {
                 baseDate.setDate(baseDate.getDate() - 1);
