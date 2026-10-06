@@ -586,6 +586,7 @@ const VIRTUAL_KEYBOARD_LAYOUTS = {
 
 function openVirtualKeyboard(targetInput, options) {
     const container = options && options.container;
+    const onDone = options && options.onDone;
     const langOrder = ["he", "en", "ar"];
     let langIndex = 0;
     let shiftOn = false;
@@ -686,6 +687,7 @@ function openVirtualKeyboard(targetInput, options) {
         doneBtn.addEventListener("click", function() {
             container.innerHTML = "";
             container.style.display = "none";
+            if (onDone) onDone();
         });
         container.innerHTML = "";
         container.appendChild(kb);
@@ -700,6 +702,7 @@ function openVirtualKeyboard(targetInput, options) {
         "z-index:2000;";
     doneBtn.addEventListener("click", function() {
         overlay.remove();
+        if (onDone) onDone();
     });
     overlay.appendChild(kb);
     overlay.addEventListener("click", function(event) {
@@ -1785,7 +1788,7 @@ updateGameTableTimer();
                 closeKeyboard();
                 return;
             }
-            openVirtualKeyboard(input, { container: keyboardSlot });
+            openVirtualKeyboard(input, { container: keyboardSlot, onDone: confirmAdd });
         });
 
         inputRow.appendChild(input);
